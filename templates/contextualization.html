@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %} Main {% endblock %}
+
+{% block content %}
+
+<div class="tab-content mt-3" id="tab-content">
+    <!-- <div class="tab-pane active" id="fill-tabpanel-0" role="tabpanel" aria-labelledby="fill-tab-0"> -->
+        <!-- Form -->
+        <form action="/" method="POST" enctype="multipart/form-data">
+            <div class="input-group mb-3">
+                <!-- Input - High-level goal -->
+                <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal" required>
+                <!-- Submit button -->
+                <div class="input-group-append"><button type="submit" class="btn btn-primary">OK</button></div>
+            </div>
+
+    <!-- </div> -->
+    <br>
+    {% if unique_triples_entailed is defined %} <!-- -->
+        <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
+        <br>
+        <!-- Triples -->
+        <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                <th>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-down-circle" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v5.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293z"/>
+                    </svg>
+                </th>
+                <th>Entailed triple(s)</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for idx, unique_triple in unique_triples_entailed %}
+                <tr>
+                    <td>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="filtered_out_triples" id="triple_{{ idx }}" value="{{ unique_triple }}">
+                            <label class="form-check-label" for="triple_{{ idx }}">{#{ unique_triple }#}</label>
+                        </div>
+                    </td>
+                    <td data-name="unique_triple" class="unique_triple">{{ unique_triple }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </form>
+        <br>
+        <br>
+        <!-- G2T -->
+        <table id="data_texts" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Generated text(s)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for text in predictions %}
+                    <tr>
+                    <td data-name="text" class="text">{{ text }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    <br>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+$(document).ready( function () {
+  $('#data_triples').DataTable();
+  $('#data_texts').DataTable();
+} );
+
+</script>
+{% endblock %}
