@@ -1,13 +1,11 @@
-from fastapi import FastAPI, Request, Form, status, HTTPException, Depends
+from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi import APIRouter
 
-from typing import Optional, List
+from typing import List
 
-from sqlalchemy.orm import Session
-from database import SessionLocal, engine
-import models
+#from sqlalchemy.orm import Session
+#from database import SessionLocal, engine, models
 
 import pandas as pd
 import rdflib
@@ -18,7 +16,7 @@ import torch
 import os
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
-from utils import triple_sentiment_analysis, test_entailment, get_neighbors
+from utils import triple_sentiment_analysis, test_entailment
 from graph_explorator import graph_explorator
 from g2t_generator import g2t_generator
 
@@ -53,14 +51,14 @@ templates = Jinja2Templates(directory="templates/")
 router = APIRouter()
 
 # Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+#def get_db():
+#    db = SessionLocal()
+#    try:
+#        yield db
+#    finally:
+#        db.close()
 
-models.Base.metadata.create_all(bind=engine)
+#models.Base.metadata.create_all(bind=engine)
 
 @router.get("/")
 async def contextualization(request: Request):
@@ -68,11 +66,11 @@ async def contextualization(request: Request):
 
 
 @router.post("/")
-async def contextualization(request: Request, highlevelgoal: str = Form(...), filtered_out_triples: List[str] = Form([]), db: Session = Depends(get_db)): ## TODO: list of lists
+async def contextualization(request: Request, highlevelgoal: str = Form(...), filtered_out_triples: List[str] = Form([])): #db: Session = Depends(get_db)):
     # clear db
-    db.query(models.Anchor_Points).delete()
-    db.query(models.Entailment_Results).delete()
-    db.commit()
+    #db.query(models.Anchor_Points).delete()
+    #db.query(models.Entailment_Results).delete()
+    #db.commit()
 
     # Process the received data, for example, print it
     print("Checked triples:", filtered_out_triples)
@@ -115,16 +113,16 @@ async def contextualization(request: Request, highlevelgoal: str = Form(...), fi
     print("\n")
 
     # Add anchor points in the database (table: anchor_points)
-    for index, row in anchor_points_df.iterrows():
-        new_anchor_points = models.Anchor_Points(triple = row["TRIPLE"],
-                                                     goal = row["GOAL"],
-                                                     #triple_serialized = , ###
-                                                     subject = row["SUBJECT"],
-                                                     predicate = row["PREDICATE"],
-                                                     object = row["OBJECT"])
-        new_anchor_points.set_triple_serialized(row["TRIPLE_SERIALIZED"])
-        db.add(new_anchor_points)
-    db.commit()
+    #for index, row in anchor_points_df.iterrows():
+    #    new_anchor_points = models.Anchor_Points(triple = row["TRIPLE"],
+    #                                                 goal = row["GOAL"],
+    #                                                 #triple_serialized = , ###
+    #                                                 subject = row["SUBJECT"],
+    #                                                 predicate = row["PREDICATE"],
+    #                                                 object = row["OBJECT"])
+    #    new_anchor_points.set_triple_serialized(row["TRIPLE_SERIALIZED"])
+    #    db.add(new_anchor_points)
+    #db.commit()
 
     # --- Transform negative triples ---
     anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
