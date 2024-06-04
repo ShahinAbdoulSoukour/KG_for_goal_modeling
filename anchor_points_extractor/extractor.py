@@ -17,7 +17,18 @@ def anchor_points_extractor(goal_triples_df: pd.DataFrame, model: SentenceTransf
     goal_triples_df.sort_values(by=['SCORE'], inplace=True, ascending=False)
 
     highest_score = goal_triples_df['SCORE'].max()
-    anchor_points_df = goal_triples_df[goal_triples_df['SCORE'] >= highest_score * 0.85]
 
-    return anchor_points_df
+    #anchor_points_df = goal_triples_df[goal_triples_df['SCORE'] >= highest_score * 0.85]
+
+    # set an interval [highest_score * 0.85, highest_score]
+    score_interval = [highest_score * 0.85, highest_score]
+
+    # filter the dataframe based on the score interval
+    filtered_df = goal_triples_df[
+        (goal_triples_df['SCORE'] >= score_interval[0]) & (goal_triples_df['SCORE'] <= score_interval[1])]
+
+    if len(filtered_df.index) < 4:
+        filtered_df = goal_triples_df[goal_triples_df['SCORE'] >= highest_score * 0.65].nlargest(4, 'SCORE')
+
+    return filtered_df
 
