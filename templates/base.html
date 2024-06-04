@@ -16,114 +16,13 @@
 
     <title>{% block title %}KAOS-API{% endblock %}</title>
 
-    <style type="text/css">
-      #mynetwork {
-            width: auto;
-            height: 700px;
-            background-color: #eeeeee;
-            border: 1px solid lightgray;
-            position: relative;
-            float: left;
+    <style>
+        .google-visualization-orgchart-node {
+            width: 240px;
         }
-
-      .report {
-        display:inline-block;
-        width:200px;
-        vertical-align:top;
-      }
-
-      .node {
-        cursor: pointer;
-      }
-
-      .node circle {
-        fill: #fff;
-        stroke: steelblue;
-        stroke-width: 3px;
-      }
-
-      .node text {
-        font: 12px sans-serif;
-      }
-
-      .link {
-        fill: none;
-        stroke: #ccc;
-        stroke-width: 2px;
-      }
-
-      .tree,
-      .tree ul,
-      .tree li {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          position: relative;
-      }
-      .tree {
-          margin: 0 0 1em;
-          text-align: center;
-      }
-      .tree,
-      .tree ul {
-          display: table;
-      }
-      .tree ul {
-          width: 100%;
-      }
-      .tree li {
-          display: table-cell;
-          padding: .5em 0;
-          vertical-align: top;
-      }
-      .tree li:before {
-          outline: solid 1px #666;
-          content: "";
-          left: 0;
-          position: absolute;
-          right: 0;
-          top: 0;
-      }
-      .tree li:first-child:before {
-          left: 50%;
-      }
-      .tree li:last-child:before {
-          right: 50%;
-      }
-      .tree code,
-      .tree span {
-          border: solid .1em #666;
-          border-radius: .2em;
-          display: inline-block;
-          margin: 0 .2em .5em;
-          padding: .2em .5em;
-          position: relative;
-      }
-      .tree ul:before,
-      .tree code:before,
-      .tree span:before {
-          outline: solid 1px #666;
-          content: "";
-          height: .5em;
-          left: 50%;
-          position: absolute;
-      }
-      .tree ul:before {
-          top: -.5em;
-      }
-      .tree code:before,
-      .tree span:before {
-          top: -.55em;
-      }
-      .tree>li {
-          margin-top: 0;
-      }
-      .tree>li:before,
-      .tree>li:after,
-      .tree>li>code:before,
-      .tree>li>span:before {
-          outline: none;
-      }
+        .google-visualization-orgchart-node-medium {
+            vertical-align: top;
+        }
     </style>
   </head>
 
@@ -136,10 +35,12 @@
                 <li class="nav-item">
                   <a class="nav-link" href="{{ url_for('contextualization')}}">Main</a>
                 </li>
-                <!--<li class="nav-item">
-                  <a class="nav-link" href="{#{ url_for('goal_relaxation')}#}">Goal relaxation</a>
-                </li>-->
-                  <!-- TODO: goal model generation -->
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('goal_model_generation') }}">Goal model generation</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">About</a> <!-- TODO: add infos about the tool (description, authors, ...) -->
+                </li>
                   <!-- TODO : upload the KG (RDF file) -->
               </ul>
             </div>
