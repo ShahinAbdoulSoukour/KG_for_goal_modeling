@@ -93,3 +93,10 @@ find_all_edges_linking_nodes_directional_q = """
         ?object rdfs:label "{1}" .
         ?predicate rdfs:label ?predicate_label .
     }}"""
+
+find_uri_from_label_q = """
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+    SELECT ?uri WHERE {{
+        ?uri rdfs:label "{0}" .
+    }}"""
