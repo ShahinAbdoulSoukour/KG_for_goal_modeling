@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 
 import contextualization
-#import goal_relaxation
-#import exploration
+import goal_model_generation
 
-app = FastAPI(title="KG for Goal Model Generation")
+app = FastAPI(title="Knowledge Graph for Goal Model Generation")
 
 app.include_router(contextualization.router)
-#app.include_router(goal_relaxation.router)
-#app.include_router(exploration.router)
+app.include_router(goal_model_generation.router)
+
+# TODO: goal relaxation
