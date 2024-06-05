@@ -4,62 +4,64 @@
 
 {% block content %}
 <br>
-    {% if hierarchy_data %}
-    <ul class="nav nav-fill nav-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="fill-tab-0" data-bs-toggle="tab" href="#fill-tabpanel-0" role="tab" aria-controls="fill-tabpanel-0" aria-selected="true"> Goal model </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="fill-tab-1" data-bs-toggle="tab" href="#fill-tabpanel-1" role="tab" aria-controls="fill-tabpanel-1" aria-selected="false"> Details </a>
-        </li>
-    </ul>
-    <div class="tab-content pt-5" id="tab-content">
-        <!-- The goal model -->
-        <div class="tab-pane active" id="fill-tabpanel-0" role="tabpanel" aria-labelledby="fill-tab-0">
-            <div id="goal_model_div"></div>
-        </div>
-
-        <!-- Details about the goal model -->
-        <div class="tab-pane" id="fill-tabpanel-1" role="tabpanel" aria-labelledby="fill-tab-1">
-            <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-                <thead>
-                <tr>
-                    <th>High-Level Goal</th>
-                        <th>Entailed Triple(s)</th>
-                        <th>Filtered triple(s)</th>
-                        <th>Subgoal created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in hierarchy_data %}
-                    <tr>
-                        <td>{{ item.high_level_goal_name }}</td> <!-- High-level goal name -->
-                        <td>
-                            <ul>
-                                {% for triple in item.entailed_triples %}
-                                    <li>{{ triple }}</li> <!-- Entailed triples-->
-                                {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                                {% for triple in item.filtered_triples %}
-                                    <li>{{ triple }}</li> <!-- Filtered triples -->
-                                {% endfor %}
-                            </ul>
-                        </td>
-                        <td>{{ item.subgoal_name }}</td> <!-- Subgoal name -->
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+{% if hierarchy_data %}
+<ul class="nav nav-fill nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="fill-tab-0" data-bs-toggle="tab" href="#fill-tabpanel-0" role="tab"
+           aria-controls="fill-tabpanel-0" aria-selected="true"> Goal model </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="fill-tab-1" data-bs-toggle="tab" href="#fill-tabpanel-1" role="tab"
+           aria-controls="fill-tabpanel-1" aria-selected="false"> Details </a>
+    </li>
+</ul>
+<div class="tab-content pt-5" id="tab-content">
+    <!-- The goal model -->
+    <div class="tab-pane active" id="fill-tabpanel-0" role="tabpanel" aria-labelledby="fill-tab-0">
+        <div id="goal_model_div"></div>
     </div>
-    {% else %}
-        <div class="alert alert-danger" role="alert">
-            No data!
-        </div>
-    {% endif %}
+
+    <!-- Details about the goal model -->
+    <div class="tab-pane" id="fill-tabpanel-1" role="tabpanel" aria-labelledby="fill-tab-1">
+        <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+            <tr>
+                <th>High-Level Goal</th>
+                <th>Entailed Triple(s)</th>
+                <th>Filtered triple(s)</th>
+                <th>Subgoal created</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in hierarchy_data %}
+            <tr>
+                <td>{{ item.high_level_goal_name }}</td> <!-- High-level goal name -->
+                <td>
+                    <ul>
+                        {% for triple in item.entailed_triples %}
+                        <li>{{ triple }}</li> <!-- Entailed triples-->
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        {% for triple in item.filtered_triples %}
+                        <li>{{ triple }}</li> <!-- Filtered triples -->
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>{{ item.subgoal_name }}</td> <!-- Subgoal name -->
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger" role="alert">
+    No data!
+</div>
+{% endif %}
 
 <!-- TODO: Export the goal model into JPEG/XML -->
 
@@ -67,40 +69,45 @@
 
 
 {% block scripts %}
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-      google.charts.load('current', {packages:["orgchart"]});
-      google.charts.setOnLoadCallback(drawChart);
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+    google.charts.load('current', {packages:["orgchart"]});
+    google.charts.setOnLoadCallback(drawChart);
 
-      function drawChart() {
-        var data = new google.visualization.DataTable();
-        data.addColumn('string', 'Name');
-        data.addColumn('string', 'Manager');
-        data.addColumn('string', 'ToolTip');
+    function drawChart() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Name');
+      data.addColumn('string', 'Manager');
+      data.addColumn('string', 'ToolTip');
 
-        // Get the hierarchy data
-        var hierarchyData = {{ hierarchy_data|tojson }};
+      // Get the hierarchy data
+      var hierarchyData = {{ hierarchy_data|tojson }};
 
-        // Create rows for the org chart
-        var rows = hierarchyData.map(function(item) {
-          return [
-            {'v': item.subgoal_name, 'f': item.subgoal_name},
-            item.high_level_goal_name,
-            'Goal'
-          ];
-        });
-
-        // Add rows to the data table
-        data.addRows(rows);
-
-        // Create the chart
-        var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
-        // Draw the chart, setting the allowHtml option to true for the ToolTips
-        chart.draw(data, {'allowHtml': true});
-      }
-
-      $(document).ready(function () {
-          $('#data_triples').DataTable();
+      // Create rows for the org chart
+      var rows = hierarchyData.map(function(item) {
+        return [
+          {'v': '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>',
+          'f': '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>'},
+          '<a href="/contextualization/' + item.high_level_goal_id +'">' + item.high_level_goal_name + '</a>',
+          'Goal'
+        ];
       });
-   </script>
+
+      // Add rows to the data table
+      data.addRows(rows);
+
+      // Create the chart
+      var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
+      // Draw the chart, setting the allowHtml option to true for the ToolTips
+      chart.draw(data, {'allowHtml': true});
+
+      google.visualization.events.addListener(chart, 'select', function() {
+          console.log(chart.getSelection());
+      });
+    }
+
+    $(document).ready(function () {
+        $('#data_triples').DataTable();
+    });
+</script>
 {% endblock %}

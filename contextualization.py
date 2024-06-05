@@ -5,6 +5,8 @@ from fastapi import APIRouter
 from typing import List
 
 from sqlalchemy.orm import Session
+from starlette.responses import RedirectResponse
+
 from database import SessionLocal, engine
 import models
 
@@ -108,15 +110,41 @@ def get_subgoal_branch_from_triple_filtered(subgoal_id, db: Session):
     return path
 
 
-
-
-
 @router.get("/")
 async def contextualization(request: Request, db: Session = Depends(get_db)):
     all_goal = db.query(models.Goal).all()
     return templates.TemplateResponse('contextualization.html', context={'request': request, 'all_goal': all_goal})
 
 
+@router.get("/contextualization/{hlg_id}")
+async def contextualization(request: Request, hlg_id: int, db: Session = Depends(get_db)):
+    all_goal = db.query(models.Goal).all()
+
+    goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == hlg_id).first()
+
+    if not goal_with_outputs:
+        return RedirectResponse("/")
+
+    highlevelgoal = goal_with_outputs.goal_name
+
+    data = []
+
+    for output in goal_with_outputs.outputs:
+        data.append({
+            'id': output.id,
+            'goal_id': output.goal_id,
+            'generated_text': output.generated_text,
+            'entailed_triple': output.get_entailed_triples()
+        })
+
+    # Create a DataFrame for storing all outputs
+    outputs_df = pd.DataFrame(data)
+
+    return templates.TemplateResponse('contextualization.html', context={'request': request,
+                                                                         'highlevelgoal': highlevelgoal,
+                                                                         'outputs': outputs_df,
+                                                                         'goal_with_outputs': goal_with_outputs,
+                                                                         'all_goal': all_goal})
 
 
 @router.post("/")
