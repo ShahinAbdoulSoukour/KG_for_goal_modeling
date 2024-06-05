@@ -396,21 +396,4 @@ async def contextualization(request: Request, highlevelgoal: str = Form(...), fi
                                                                                  'all_goal': all_goal, # for the input (for autocompletion)
                                                                                  })
     else:
-        data = []
-
-        for output in goal_with_outputs.outputs:
-            data.append({
-                'id': output.id,
-                'goal_id': output.goal_id,
-                'generated_text': output.generated_text,
-                'entailed_triple': output.get_entailed_triples()
-            })
-
-        # Create a DataFrame for storing all outputs
-        outputs_df = pd.DataFrame(data)
-
-        return templates.TemplateResponse('contextualization.html', context={'request': request,
-                                                                             'highlevelgoal': highlevelgoal,
-                                                                             'outputs': outputs_df,
-                                                                             'goal_with_outputs': goal_with_outputs,
-                                                                             'all_goal': all_goal})
+        return RedirectResponse(f"/contextualization/{goal_with_outputs.id}", status_code=302)
