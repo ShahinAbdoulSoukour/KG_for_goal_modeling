@@ -34,7 +34,7 @@
                    id="input-datalist" list="list-goal" required>
             <datalist id="list-goal">
                 {% for g in all_goal %}
-                <option value="{{ g.goal_name }}"></option>
+                    <option value="{{ g.goal_name }}"></option>
                 {% endfor %}
             </datalist>
             <!-- Submit button -->
@@ -140,12 +140,5 @@
             }
         });
     });
-
-    // for autocompletion (input)
-    document.addEventListener('DOMContentLoaded', e => {
-        $('#input-datalist').autocomplete()
-    }, false);
-
-
 </script>
 {% endblock %}
