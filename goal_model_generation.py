@@ -58,8 +58,6 @@ async def goal_model_generation(request: Request, db: Session = Depends(get_db))
         triple_filtered, subgoal_goal.id == triple_filtered.subgoal_id
     ).all()
 
-    print(goal_hierarchy)
-
     # Process the goal hierarchy to remove redundant filtered triples
     hierarchy_data = []
     combined_data = {}
