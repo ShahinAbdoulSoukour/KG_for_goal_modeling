@@ -148,7 +148,7 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
 
 @router.post("/")
-async def contextualization(request: Request, highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type:str = Form(...), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -321,7 +321,7 @@ async def contextualization(request: Request, highlevelgoal: str = Form(...), fi
         if unique_triples_entailed:
             if not modified_filtered_triples:
                 # Add the goal (as high-level goal) in the database (table: goal)
-                new_goal = models.Goal(goal_name=highlevelgoal)
+                new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
                 db.add(new_goal)
                 db.commit()
 
@@ -336,7 +336,7 @@ async def contextualization(request: Request, highlevelgoal: str = Form(...), fi
                 print("\nHigh-level goal added in the database!")
             else:
                 # Add the goal (as subgoal) in the database (table: goal)
-                new_goal = models.Goal(goal_name=highlevelgoal)
+                new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
                 db.add(new_goal)
                 db.commit()
 

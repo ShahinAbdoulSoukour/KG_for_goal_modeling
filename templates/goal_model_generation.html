@@ -36,9 +36,9 @@
       // Create rows for the org chart
       var rows = hierarchyData.map(function(item) {
         return [
-          {'v': '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>',
-          'f': '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>'},
-          '<a href="/contextualization/' + item.high_level_goal_id +'">' + item.high_level_goal_name + '</a>',
+          {'v': '['+item.subgoal_goal_type+'] ' + '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>',
+          'f': '['+item.subgoal_goal_type+'] ' + '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>'},
+          '['+item.high_level_goal_goal_type+'] ' + '<a href="/contextualization/' + item.high_level_goal_id +'">' + item.high_level_goal_name + '</a>',
           'Goal'
         ];
       });

@@ -29,6 +29,13 @@
     <!-- Form -->
     <form id="myForm" action="/" method="POST" enctype="multipart/form-data">
         <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <!-- Goal type -->
+                <select class="form-select" name="goal_type" aria-label="goal_type_selection">
+                  <option value="ACHIEVE">ACHIEVE</option>
+                  <option value="AVOID">AVOID</option>
+                </select>
+            </div>
             <!-- Input - High-level goal -->
             <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal"
                    id="input-datalist" list="list-goal" required>

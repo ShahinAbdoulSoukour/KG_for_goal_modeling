@@ -43,8 +43,10 @@ async def goal_model_generation(request: Request, db: Session = Depends(get_db))
     goal_hierarchy = db.query(
         models.Hierarchy,
         high_level_goal.id.label('high_level_goal_id'),
+        high_level_goal.goal_type.label('high_level_goal_goal_type'),
         high_level_goal.goal_name.label('high_level_goal_name'),
         subgoal_goal.id.label('subgoal_id'),
+        subgoal_goal.goal_type.label('subgoal_goal_type'),
         subgoal_goal.goal_name.label('subgoal_name'),
         outputs.entailed_triple.label('entailed_triple'),
         triple_filtered.triple_filtered_from_hlg.label('filtered_triple')
@@ -68,8 +70,10 @@ async def goal_model_generation(request: Request, db: Session = Depends(get_db))
             print(key)
             combined_data[key] = {
                 'high_level_goal_id': h.high_level_goal_id,
+                'high_level_goal_goal_type': h.high_level_goal_goal_type,
                 'high_level_goal_name': h.high_level_goal_name,
                 'subgoal_id': h.subgoal_id,
+                'subgoal_goal_type': h.subgoal_goal_type,
                 'subgoal_name': h.subgoal_name,
                 'filtered_triples': set(),
                 'entailed_triples': set()
@@ -82,8 +86,10 @@ async def goal_model_generation(request: Request, db: Session = Depends(get_db))
     for key, value in combined_data.items():
         hierarchy_data.append({
             'high_level_goal_id': value['high_level_goal_id'],
+            'high_level_goal_goal_type': value['high_level_goal_goal_type'],
             'high_level_goal_name': value['high_level_goal_name'],
             'subgoal_id': value['subgoal_id'],
+            'subgoal_goal_type': value['subgoal_goal_type'],
             'subgoal_name': value['subgoal_name'],
             'filtered_triples': list(value['filtered_triples']),
             'entailed_triples': list(value['entailed_triples'])
