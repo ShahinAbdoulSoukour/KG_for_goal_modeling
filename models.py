@@ -20,6 +20,7 @@ class Goal(Base):
     __tablename__ = "goal"
 
     id = Column(Integer, primary_key=True)
+    goal_type = Column(String(100))
     goal_name = Column(String(100))
 
     outputs = relationship("Outputs", back_populates="goal") # one-to-many relationship`
