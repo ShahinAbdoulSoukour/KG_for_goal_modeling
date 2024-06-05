@@ -5,95 +5,114 @@
 {% block content %}
 
 <div class="tab-content mt-3" id="tab-content">
-        <!-- Progress bar -->
-        <!--
-        <div class="progress mt-3" style="display: none;">
-          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-        -->
-
-        <!-- Form -->
-        <form id="myForm" action="/" method="POST" enctype="multipart/form-data">
-            <div class="input-group mb-3">
-                <!-- Input - High-level goal -->
-                <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal" id="input-datalist" list="list-goal" required>
-                <datalist id="list-goal">
-                    {% for g in all_goal %}
-                    <option value="{{ g.goal_name }}"></option>
-                    {% endfor %}
-                </datalist>
-                <!-- Submit button -->
-                <div class="input-group-append"><button type="submit" class="btn btn-primary">OK</button></div>
+    <div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel"
+         aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loadingModalLabel">Identifying relevant information...</h5>
+                </div>
+                <div class="modal-body">
+                    This may take a while, please don't close this window.
+                    <br><br>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
+                             aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                </div>
             </div>
-            <br>
+        </div>
+    </div>
 
-            {% if not goal_with_outputs %} <!-- -->
+    <!-- Form -->
+    <form id="myForm" action="/" method="POST" enctype="multipart/form-data">
+        <div class="input-group mb-3">
+            <!-- Input - High-level goal -->
+            <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal"
+                   id="input-datalist" list="list-goal" required>
+            <datalist id="list-goal">
+                {% for g in all_goal %}
+                <option value="{{ g.goal_name }}"></option>
+                {% endfor %}
+            </datalist>
+            <!-- Submit button -->
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
+            </div>
+        </div>
+        <br>
 
-                {% if unique_triples_entailed is defined %}
-                    <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
-                    <br>
-                    <!-- Entailed triples -->
-                    <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Generated text</th>
-                                <th>Entailed triple</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for idx, row in outputs.iterrows() %} <!-- outputs -->
-                            <tr>
-                                <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
-                                <td>
-                                    {% for t in row['entailed_triple'] %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id" id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                                            <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
-                                        </div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-        </form>
-                {% else %}
-                    {% if message is defined %}
-                        <div class="alert alert-danger" role="alert">
-                          No entailed triples has been identified!
-                        </div>
-                    {% endif %}
-                {% endif %}
+        {% if not goal_with_outputs %} <!-- -->
 
-            {% else %}
-                <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
-                    <br>
-                    <!-- Entailed triples -->
-                    <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Generated text</th>
-                                <th>Entailed triple</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for idx, row in outputs.iterrows() %} <!-- outputs -->
-                            <tr>
-                                <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
-                                <td>
-                                    {% for t in row['entailed_triple'] %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id" id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                                            <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
-                                        </div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-        </form>
-            {% endif %}
+        {% if unique_triples_entailed is defined %}
+        <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
+        <br>
+        <!-- Entailed triples -->
+        <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+            <thead>
+            <tr>
+                <th>Generated text</th>
+                <th>Entailed triple</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for idx, row in outputs.iterrows() %} <!-- outputs -->
+            <tr>
+                <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+                <td>
+                    {% for t in row['entailed_triple'] %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
+                               id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
+                        <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
+                    </div>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </form>
+    {% else %}
+    {% if message is defined %}
+    <div class="alert alert-danger" role="alert">
+        No entailed triples has been identified!
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% else %}
+    <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
+    <br>
+    <!-- Entailed triples -->
+    <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+        <thead>
+        <tr>
+            <th>Generated text</th>
+            <th>Entailed triple</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for idx, row in outputs.iterrows() %} <!-- outputs -->
+        <tr>
+            <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+            <td>
+                {% for t in row['entailed_triple'] %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
+                           id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
+                    <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
+                </div>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </form>
+    {% endif %}
     <br>
 </div>
 
@@ -102,17 +121,30 @@
 {% block scripts %}
 <script>
 
-$(document).ready( function () {
-  $('#data_triples').DataTable();
-} );
+    $(document).ready( function () {
+        $('#data_triples').DataTable();
 
-// for autocompletion (input)
-document.addEventListener('DOMContentLoaded', e => {
-    $('#input-datalist').autocomplete()
-}, false);
+        $("#okBtn").click(function() {
+            if ($("#input-datalist").val()) {
+                $(this).prop("disabled", true);
+                $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
 
+                $("#loadingModal").modal({
+                    "backdrop": "static",
+                    "keyboard": false
+                }).modal("show");
+            } else {
+                $("#input-datalist").css("background-color", "#ffda69");
+                console.log("aaaaaaaaaaa");
+            }
+        });
+    });
 
-// TODO: Progress Bar
+    // for autocompletion (input)
+    document.addEventListener('DOMContentLoaded', e => {
+        $('#input-datalist').autocomplete()
+    }, false);
+
 
 </script>
 {% endblock %}
