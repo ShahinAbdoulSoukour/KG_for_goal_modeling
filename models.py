@@ -9,7 +9,7 @@ class Hierarchy(Base):
     __tablename__ = "hierarchy"
     id = Column(Integer, primary_key=True)
     high_level_goal_id = Column(Integer, ForeignKey('goal.id'))
-    subgoal_id = Column(Integer, ForeignKey('goal.id'))
+    subgoal_id = Column(Integer, ForeignKey('goal.id'), nullable=False)
 
     high_level_goal = relationship("Goal", foreign_keys=[high_level_goal_id], back_populates="high_level_hierarchies")
     subgoal = relationship("Goal", foreign_keys=[subgoal_id], back_populates="subgoal_hierarchies")
@@ -23,16 +23,17 @@ class Goal(Base):
     goal_type = Column(String(100))
     goal_name = Column(String(100))
 
-    outputs = relationship("Outputs", back_populates="goal") # one-to-many relationship`
+    outputs = relationship("Outputs", back_populates="goal", cascade="all, delete-orphan") # one-to-many relationship`
 
     triple_filtered = relationship("Triple_Filtered", back_populates="goal",
-                                   foreign_keys="[Triple_Filtered.high_level_goal_id]")
+                                   foreign_keys="[Triple_Filtered.high_level_goal_id]", cascade="all, delete-orphan")
     triple_filtered_subgoals = relationship("Triple_Filtered", back_populates="subgoal",
-                                            foreign_keys="[Triple_Filtered.subgoal_id]")
+                                            foreign_keys="[Triple_Filtered.subgoal_id]", cascade="all, delete-orphan")
 
     high_level_hierarchies = relationship("Hierarchy", foreign_keys="[Hierarchy.high_level_goal_id]",
-                                          back_populates="high_level_goal")
-    subgoal_hierarchies = relationship("Hierarchy", foreign_keys="[Hierarchy.subgoal_id]", back_populates="subgoal")
+                                          back_populates="high_level_goal", cascade="all, delete-orphan")
+    subgoal_hierarchies = relationship("Hierarchy", foreign_keys="[Hierarchy.subgoal_id]", back_populates="subgoal",
+                                       cascade="all, delete-orphan")
 
 
 
