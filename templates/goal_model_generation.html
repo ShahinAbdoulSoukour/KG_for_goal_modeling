@@ -4,6 +4,8 @@
 
 {% block content %}
 <br>
+
+
 {% if hierarchy_data %}
     <!-- Goal model -->
     <div id="goal_model_div"></div>
@@ -25,39 +27,70 @@
     google.charts.setOnLoadCallback(drawChart);
 
     function drawChart() {
-      var data = new google.visualization.DataTable();
-      data.addColumn('string', 'Name');
-      data.addColumn('string', 'Manager');
-      data.addColumn('string', 'ToolTip');
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Name');
+        data.addColumn('string', 'Manager');
+        data.addColumn('string', 'ToolTip');
 
-      // Get the hierarchy data
-      var hierarchyData = {{ hierarchy_data|tojson }};
+        // Get the hierarchy data
+        var hierarchyData = {{ hierarchy_data|tojson }};
 
-      // Create rows for the org chart
-      var rows = hierarchyData.map(function(item) {
-        return [
-          {'v': '['+item.subgoal_goal_type+'] ' + '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>',
-          'f': '['+item.subgoal_goal_type+'] ' + '<a href="/contextualization/' + item.subgoal_id +'">' + item.subgoal_name + '</a>'},
-          '['+item.high_level_goal_goal_type+'] ' + '<a href="/contextualization/' + item.high_level_goal_id +'">' + item.high_level_goal_name + '</a>',
-          'Goal'
-        ];
-      });
+        // Create a map to track parent-child relationships
+        var parentMap = {};
+        hierarchyData.forEach(function(item) {
+            if (item.high_level_goal_id) {
+                if (!parentMap[item.high_level_goal_id]) {
+                    parentMap[item.high_level_goal_id] = [];
+                }
+                parentMap[item.high_level_goal_id].push(item.subgoal_id);
+            }
+        });
 
-      // Add rows to the data table
-      data.addRows(rows);
+        // Create rows for the org chart
+        var rows = hierarchyData.map(function(item) {
+            var subgoalId = item.subgoal_id;
+            var subgoalName = item.subgoal_name;
+            var highLevelGoalId = item.high_level_goal_id;
+            var highLevelGoalName = item.high_level_goal_name;
 
-      // Create the chart
-      var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
-      // Draw the chart, setting the allowHtml option to true for the ToolTips
-      chart.draw(data, {'allowHtml': true});
+            // Check if the subgoal is a leaf node
+            var isLeaf = !parentMap[subgoalId];
 
-      google.visualization.events.addListener(chart, 'select', function() {
-          console.log(chart.getSelection());
-      });
+            var subgoalContent = '[' + item.subgoal_goal_type + '] ' + '<a href="/contextualization/' + subgoalId + '">' + subgoalName + '</a>';
+            if (isLeaf)
+            {
+                subgoalContent += ' <span style="white-space: nowrap;">' +
+                    '<form method="POST" action="/deleteGoal" style="display:inline;" onsubmit="return confirm(\'Are you sure you want to delete this subgoal?\');">' +
+                    '<input type="hidden" name="subgoal_id" value="' + item.subgoal_id + '">' +
+                    '<button type="submit" class="btn btn-outline-danger">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">' +
+                    '<path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>' +
+                    '<path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>' +
+                    '</svg>' +
+                    '</button>' +
+                    '</form>' +
+                    '</span>';
+            }
+
+            // If there is no highLevelGoalId, set it to null
+            return [
+                { 'v': subgoalContent, 'f': subgoalContent },
+                highLevelGoalId ? '[' + item.high_level_goal_goal_type + '] ' + '<a href="/contextualization/' + highLevelGoalId + '">' + highLevelGoalName + '</a>' : null,
+                'Goal'
+            ];
+        });
+
+        // Add rows to the data table
+        data.addRows(rows);
+
+        // Create the chart
+        var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
+        // Draw the chart, setting the allowHtml option to true for the ToolTips
+        chart.draw(data, { 'allowHtml': true });
+
+        google.visualization.events.addListener(chart, 'select', function() {
+            console.log(chart.getSelection());
+        });
     }
-
-    $(document).ready(function () {
-        $('#data_triples').DataTable();
-    });
 </script>
 {% endblock %}

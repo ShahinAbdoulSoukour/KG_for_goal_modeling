@@ -1,4 +1,4 @@
-from fastapi import Request, Depends
+from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter
 
@@ -33,66 +33,69 @@ def get_db():
 models.Base.metadata.create_all(bind=engine)
 
 
+
+def process_goal_hierarchy(db: Session):
+    # Fetch all goals
+    all_goals = db.query(models.Goal).all()
+
+    # Fetch all hierarchies
+    hierarchies = db.query(models.Hierarchy).all()
+
+    # Process and map the goals with their hierarchies
+    hierarchy_data = []
+
+    for goal in all_goals:
+        for hierarchy in hierarchies:
+            if hierarchy.subgoal_id == goal.id or hierarchy.high_level_goal_id == goal.id:
+                hierarchy_data.append({
+                    'subgoal_id': hierarchy.subgoal_id,
+                    'subgoal_name': db.query(models.Goal).filter(models.Goal.id == hierarchy.subgoal_id).first().goal_name,
+                    'subgoal_goal_type': db.query(models.Goal).filter(models.Goal.id == hierarchy.subgoal_id).first().goal_type,
+                    'high_level_goal_id': hierarchy.high_level_goal_id,
+                    'high_level_goal_name': db.query(models.Goal).filter(
+                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_name,
+                    'high_level_goal_goal_type': db.query(models.Goal).filter(
+                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_type
+                })
+
+    # Add single goals with no hierarchy
+    for goal in all_goals:
+        if not any(goal.id == h['subgoal_id'] or goal.id == h['high_level_goal_id'] for h in hierarchy_data):
+            hierarchy_data.append({
+                'subgoal_id': goal.id,
+                'subgoal_name': goal.goal_name,
+                'subgoal_goal_type': goal.goal_type,
+                'high_level_goal_id': None,
+                'high_level_goal_name': None,
+                'high_level_goal_goal_type': None
+            })
+
+    return hierarchy_data
+
+
+
 @router.get("/goal_model_generation")
 async def goal_model_generation(request: Request, db: Session = Depends(get_db)):
-    high_level_goal = aliased(models.Goal)
-    subgoal_goal = aliased(models.Goal)
-    outputs = aliased(models.Outputs)
-    triple_filtered = aliased(models.Triple_Filtered)
+    return templates.TemplateResponse('goal_model_generation.html', context={'request': request, 'hierarchy_data': process_goal_hierarchy(db)})
 
-    goal_hierarchy = db.query(
-        models.Hierarchy,
-        high_level_goal.id.label('high_level_goal_id'),
-        high_level_goal.goal_type.label('high_level_goal_goal_type'),
-        high_level_goal.goal_name.label('high_level_goal_name'),
-        subgoal_goal.id.label('subgoal_id'),
-        subgoal_goal.goal_type.label('subgoal_goal_type'),
-        subgoal_goal.goal_name.label('subgoal_name'),
-        outputs.entailed_triple.label('entailed_triple'),
-        triple_filtered.triple_filtered_from_hlg.label('filtered_triple')
-    ).join(
-        high_level_goal, models.Hierarchy.high_level_goal_id == high_level_goal.id
-    ).join(
-        subgoal_goal, models.Hierarchy.subgoal_id == subgoal_goal.id
-    ).join(
-        outputs, high_level_goal.id == outputs.goal_id
-    ).join(
-        triple_filtered, subgoal_goal.id == triple_filtered.subgoal_id
-    ).all()
 
-    # Process the goal hierarchy to remove redundant filtered triples
-    hierarchy_data = []
-    combined_data = {}
 
-    for h in goal_hierarchy:
-        key = (h.high_level_goal_name, h.subgoal_name)
-        if key not in combined_data:
-            print(key)
-            combined_data[key] = {
-                'high_level_goal_id': h.high_level_goal_id,
-                'high_level_goal_goal_type': h.high_level_goal_goal_type,
-                'high_level_goal_name': h.high_level_goal_name,
-                'subgoal_id': h.subgoal_id,
-                'subgoal_goal_type': h.subgoal_goal_type,
-                'subgoal_name': h.subgoal_name,
-                'filtered_triples': set(),
-                'entailed_triples': set()
-            }
-        if h.filtered_triple:
-            combined_data[key]['filtered_triples'].add(h.filtered_triple)
-        if h.entailed_triple:
-            combined_data[key]['entailed_triples'].add(h.entailed_triple)
+@router.post("/goal_model_generation")
+async def deleteGoal(request: Request, subgoal_id: int = Form(...), db: Session = Depends(get_db)):
+    # Log
+    print("Subgoal ID to delete:", subgoal_id)
 
-    for key, value in combined_data.items():
-        hierarchy_data.append({
-            'high_level_goal_id': value['high_level_goal_id'],
-            'high_level_goal_goal_type': value['high_level_goal_goal_type'],
-            'high_level_goal_name': value['high_level_goal_name'],
-            'subgoal_id': value['subgoal_id'],
-            'subgoal_goal_type': value['subgoal_goal_type'],
-            'subgoal_name': value['subgoal_name'],
-            'filtered_triples': list(value['filtered_triples']),
-            'entailed_triples': list(value['entailed_triples'])
-        })
+    # Query the database to find the subgoal
+    subgoal = db.query(models.Goal).filter(models.Goal.id == subgoal_id).first()
 
-    return templates.TemplateResponse('goal_model_generation.html', context={'request': request, 'hierarchy_data': hierarchy_data})
+    if subgoal:
+        # Delete the subgoal and all related hierarchies
+        db.query(models.Hierarchy).filter(
+            (models.Hierarchy.subgoal_id == subgoal_id) | (models.Hierarchy.high_level_goal_id == subgoal_id)).delete()
+        db.delete(subgoal)
+        db.commit()
+
+        print("The subgoal ID " + str(subgoal_id) + " is deleted!")
+
+    return templates.TemplateResponse('goal_model_generation.html',
+                                      context={'request': request, 'hierarchy_data': process_goal_hierarchy(db)})
