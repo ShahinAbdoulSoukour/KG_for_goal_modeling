@@ -11,7 +11,6 @@ from database import SessionLocal, engine
 import models
 
 import pandas as pd
-import rdflib
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, T5ForConditionalGeneration, T5Tokenizer, pipeline
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
@@ -47,8 +46,8 @@ sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, toke
 # --- Import the Knowledge Graph (KG) ---
 # TODO: upload a knowledge graph (RDF file)
 domain_graph = graph_extender("./flooding_graph.rdf")
-#domain_graph = rdflib.Graph()
-#domain_graph.parse("./flooding_graph.rdf")
+# domain_graph = rdflib.Graph()
+# domain_graph.parse("./flooding_graph.rdf")
 
 
 # Templates (Jinja2)
@@ -148,7 +147,7 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type:str = Form(...), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -176,7 +175,7 @@ async def contextualization(request: Request, goal_type:str = Form(...), highlev
                 for row in triples_with_ids_df.itertuples():
                     print(row.filtered_triple)
                     modified_filtered_triples.append({
-                        'high_level_goal_id': row.goal_id, # High-level goal ID
+                        'high_level_goal_id': row.goal_id,  # High-level goal ID
                         'triple_filtered_from_hlg': row.filtered_triple.replace("', '", ' ').replace("['", "").replace("']", "")
                     })
 
@@ -291,29 +290,37 @@ async def contextualization(request: Request, goal_type:str = Form(...), highlev
 
         triples_already_processed = []
         processed_data = []
+        triples_to_process_grouped = []
+        group_is_avoid_list = []
 
-        for idx, row in entailed_triples_df.iterrows():
+        for row in entailed_triples_df.itertuples():
             triples_to_process = []
-            for triple in row["SUBGOALS_SERIALIZED"]:
+
+            text_version = row.SUBGOALS.split(". ")[-1]
+            group_is_avoid = "Prevent that" in text_version
+            group_is_avoid_list.append(group_is_avoid)
+
+            for triple in row.SUBGOALS_SERIALIZED:
                 if (triple not in triples_already_processed) and (type(triple) is list):
                     triples_to_process.append(triple)
-
             if triples_to_process:
-                # --> Generate text
-                prediction = g2t_generator(triples_to_process, model=model_g2t, tokenizer=tokenizer_g2t)[0]
-                text_version = row["SUBGOALS"].split(". ")[-1]
-                # Add the type of goal as a prefix at the beginning of the text
-                if "Prevent that" in text_version:
+                triples_to_process_grouped.append(triples_to_process)
+
+            triples_already_processed.extend(triples_to_process)
+
+        if triples_to_process_grouped:
+            predictions = g2t_generator(triples_to_process_grouped, model=model_g2t, tokenizer=tokenizer_g2t)
+
+            for is_avoid, prediction, triples_to_process in zip(group_is_avoid_list, predictions, triples_to_process_grouped):
+                if is_avoid:
                     prediction = "[AVOID] " + prediction
                 else:
                     prediction = "[ACHIEVE] " + prediction
 
                 processed_data.append({
-                    "ENTAILED_TRIPLE":triples_to_process,
-                    "GENERATED_TEXT":prediction
+                    "ENTAILED_TRIPLE": triples_to_process,
+                    "GENERATED_TEXT": prediction
                 })
-
-            triples_already_processed.extend(triples_to_process)
 
         # Create DataFrame from the list of dictionaries
         processed_data_df = pd.DataFrame(processed_data)
@@ -326,10 +333,10 @@ async def contextualization(request: Request, goal_type:str = Form(...), highlev
                 db.commit()
 
                 # Add the entailed triples and the generated text in the database (table: outputs)
-                for idx, row in processed_data_df.iterrows():
-                    new_results = models.Outputs(generated_text = row["GENERATED_TEXT"],
-                                                 goal_id = new_goal.id)
-                    new_results.set_entailed_triple(row["ENTAILED_TRIPLE"])
+                for row in processed_data_df.itertuples():
+                    new_results = models.Outputs(generated_text=row.GENERATED_TEXT,
+                                                 goal_id=new_goal.id)
+                    new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                     db.add(new_results)
                 db.commit()
 
@@ -341,9 +348,9 @@ async def contextualization(request: Request, goal_type:str = Form(...), highlev
                 db.commit()
 
                 # Add the entailed triples and the generated text in the database (table: outputs)
-                for idx, row in processed_data_df.iterrows():
-                    new_results = models.Outputs(generated_text=row["GENERATED_TEXT"], goal_id=new_goal.id)
-                    new_results.set_entailed_triple(row["ENTAILED_TRIPLE"])
+                for row in processed_data_df.itertuples():
+                    new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_id=new_goal.id)
+                    new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                     db.add(new_results)
                 db.commit()
 
@@ -379,21 +386,23 @@ async def contextualization(request: Request, goal_type:str = Form(...), highlev
             # Create a DataFrame for storing all outputs
             outputs_df = pd.DataFrame(data)
 
-            return templates.TemplateResponse('contextualization.html', context={'request': request,
-                                                                                'highlevelgoal': highlevelgoal,
-                                                                                'unique_triples_entailed': enumerate(unique_triples_entailed),
-                                                                                'outputs': outputs_df,
-                                                                                'goal_with_outputs': goal_with_outputs,
-                                                                                'all_goal': all_goal, # for the input (for autocompletion)
-                                                                                })
+            return templates.TemplateResponse('contextualization.html', context={
+                'request': request,
+                'highlevelgoal': highlevelgoal,
+                'unique_triples_entailed': enumerate(unique_triples_entailed),
+                'outputs': outputs_df,
+                'goal_with_outputs': goal_with_outputs,
+                'all_goal': all_goal,  # for the input (for autocompletion)
+            })
         else:
             message = "No triple"
             print("\nNo triples!")
-            return templates.TemplateResponse('contextualization.html', context={'request': request,
-                                                                                 'highlevelgoal': highlevelgoal,
-                                                                                 'message': message,
-                                                                                 'goal_with_outputs': goal_with_outputs,
-                                                                                 'all_goal': all_goal, # for the input (for autocompletion)
-                                                                                 })
+            return templates.TemplateResponse('contextualization.html', context={
+                'request': request,
+                'highlevelgoal': highlevelgoal,
+                'message': message,
+                'goal_with_outputs': goal_with_outputs,
+                'all_goal': all_goal,  # for the input (for autocompletion)
+            })
     else:
         return RedirectResponse(f"/contextualization/{goal_with_outputs.id}", status_code=302)

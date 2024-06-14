@@ -1,5 +1,5 @@
 import os
-import time
+from typing import Union
 
 import torch
 from torch.nn.utils.rnn import pad_sequence
@@ -11,16 +11,22 @@ from g2t_generator.constrain_generate_util import generate
 from g2t_generator.data import WebNLGDataset, WebNLGDataLoader
 
 
-def generate_g2t_data(triples: list[tuple[str, str, str]]):
-    triples_grouped_by_subject = dict()
-    for triple in triples:
-        if triple[0] in triples_grouped_by_subject:
-            triples_grouped_by_subject[triple[0]].append([triple[1], triple[2]])
-        else:
-            triples_grouped_by_subject[triple[0]] = [[triple[1], triple[2]]]
+def generate_g2t_data(triples: Union[list[tuple[str, str, str]], list[list[tuple[str, str, str]]]]):
+    if type(triples[0][0]) is str:
+        triples = [triples]
+
+    triples_grouped_by_subject_list = []
+    for triples_group in triples:
+        triples_grouped_by_subject = dict()
+        for triple in triples_group:
+            if triple[0] in triples_grouped_by_subject:
+                triples_grouped_by_subject[triple[0]].append([triple[1], triple[2]])
+            else:
+                triples_grouped_by_subject[triple[0]] = [[triple[1], triple[2]]]
+        triples_grouped_by_subject_list.append(triples_grouped_by_subject)
 
     processed_data = [{
-        "id": "Id1",
+        "id": f"Id{j}",
         "kbs": {
             f"W{i}": [
                 subject,
@@ -37,12 +43,12 @@ def generate_g2t_data(triples: list[tuple[str, str, str]]):
         "text": [
             "",
             ""
-        ]}]
+        ]} for j, triples_grouped_by_subject in enumerate(triples_grouped_by_subject_list)]
 
     return processed_data
 
 
-def g2t_generator(triples: list[tuple[str, str, str]], model, tokenizer):
+def g2t_generator(triples: Union[list[tuple[str, str, str]], list[list[tuple[str, str, str]]]], model, tokenizer):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     processed_data = generate_g2t_data(triples)
 
@@ -204,9 +210,6 @@ if __name__ == "__main__":
     default_model = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(torch_device)
     default_tokenizer = T5Tokenizer.from_pretrained("t5-base")
 
-    for i in range(5):
-        start_time = time.time()
-        prediction = g2t_generator(test_data, model=default_model, tokenizer=default_tokenizer)[0]
+    prediction = g2t_generator(test_data, model=default_model, tokenizer=default_tokenizer)[0]
 
-        print(prediction)
-        print("--- %s seconds ---" % (time.time() - start_time))
+    print(prediction)

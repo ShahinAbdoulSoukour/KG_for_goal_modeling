@@ -15,7 +15,6 @@ class Hierarchy(Base):
     subgoal = relationship("Goal", foreign_keys=[subgoal_id], back_populates="subgoal_hierarchies")
 
 
-
 class Goal(Base):
     __tablename__ = "goal"
 
@@ -36,7 +35,6 @@ class Goal(Base):
                                        cascade="all, delete-orphan")
 
 
-
 class Outputs(Base):
     __tablename__ = "outputs"
 
@@ -52,7 +50,6 @@ class Outputs(Base):
 
     def get_entailed_triples(self):
         return json.loads(self.entailed_triple)
-
 
 
 class Triple_Filtered(Base):
