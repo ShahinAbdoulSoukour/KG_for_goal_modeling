@@ -45,7 +45,7 @@ sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, toke
 
 # --- Import the Knowledge Graph (KG) ---
 # TODO: upload a knowledge graph (RDF file)
-domain_graph = graph_extender("./flooding_graph.rdf")
+domain_graph = graph_extender("./flooding_graph_V2.rdf")
 # domain_graph = rdflib.Graph()
 # domain_graph.parse("./flooding_graph.rdf")
 
