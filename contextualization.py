@@ -18,7 +18,7 @@ import torch
 import os
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
-from utils import triple_sentiment_analysis, test_entailment
+from utils import triple_sentiment_analysis, test_entailment, triple_sentiment_analysis_api
 from graph_explorator import graph_explorator
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
@@ -38,9 +38,6 @@ model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).t
 
 model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
 tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
-
-sentiment_model_path = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, tokenizer=sentiment_model_path, device=device)
 
 
 # --- Import the Knowledge Graph (KG) ---
@@ -245,7 +242,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), highle
 
         # --- Transform negative triples ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
-            lambda triple: triple_sentiment_analysis(triple[0], sentiment_task, neutral_predicates=["is a type of"])[0])
+            lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []

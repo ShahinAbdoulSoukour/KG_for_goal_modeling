@@ -1,5 +1,6 @@
 from typing import Optional
 
+import requests
 import torch
 
 from sklearn.metrics.pairwise import cosine_similarity
@@ -74,6 +75,48 @@ def detect_entailment(premise, hypothesis, model_name, model=None, tokenizer=Non
     proba = max(dict_predicted_probability.values())
 
     return label, proba
+
+
+def triple_sentiment_analysis_api(triple, neutral_predicates=None):
+    """
+        Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple through the HuggingFace API.
+
+        Parameters
+        ----------
+        triple :             list[str]
+                             A list composed of three strings:
+
+                                 #. A subject
+                                 #. A predicate
+                                 #. An object
+
+        neutral_predicates : list[str], optional
+                             A list of predicates inducing automatically neutral triples. Predicates from the RDF ontology
+                             (e.g., `rdf:type`) are often relevant for this list.
+
+        Returns
+        -------
+        tuple[str, float]
+            A tuple composed of the most probable sentiment for the triple and its certainty score.
+        """
+    API_URL = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+    API_TOKEN = "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"
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+
+    if neutral_predicates is None:
+        neutral_predicates = []
+
+    if triple[1] in neutral_predicates:
+        return "neutral", 1
+
+    data = {
+        "inputs": " ".join(triple),
+        "wait_for_model": 'true'
+    }
+
+    sentiment = requests.post(API_URL, headers=headers, json=data).json()[0][0]
+
+    return sentiment["label"], sentiment["score"]
 
 
 def triple_sentiment_analysis(triple, sentiment_task, neutral_predicates=None) -> tuple[str, float]:

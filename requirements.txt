@@ -13,3 +13,4 @@ python-multipart==0.0.9
 torch~=2.3.0
 numpy~=1.26.4
 starlette~=0.37.2
+requests~=2.32.3
