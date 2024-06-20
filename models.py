@@ -7,7 +7,9 @@ from database import Base
 # Hierarchy table to manage parent-child relationships between goals
 class Hierarchy(Base):
     __tablename__ = "hierarchy"
+
     id = Column(Integer, primary_key=True)
+    refinement = Column(String(3))
     high_level_goal_id = Column(Integer, ForeignKey('goal.id'))
     subgoal_id = Column(Integer, ForeignKey('goal.id'), nullable=False)
 
