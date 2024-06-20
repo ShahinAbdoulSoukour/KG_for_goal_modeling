@@ -55,7 +55,8 @@ def process_goal_hierarchy(db: Session):
                     'high_level_goal_name': db.query(models.Goal).filter(
                         models.Goal.id == hierarchy.high_level_goal_id).first().goal_name,
                     'high_level_goal_goal_type': db.query(models.Goal).filter(
-                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_type
+                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_type,
+                    'refinement': hierarchy.refinement
                 })
 
     # Add single goals with no hierarchy
@@ -67,7 +68,8 @@ def process_goal_hierarchy(db: Session):
                 'subgoal_goal_type': goal.goal_type,
                 'high_level_goal_id': None,
                 'high_level_goal_name': None,
-                'high_level_goal_goal_type': None
+                'high_level_goal_goal_type': None,
+                'refinement': None
             })
 
     return hierarchy_data

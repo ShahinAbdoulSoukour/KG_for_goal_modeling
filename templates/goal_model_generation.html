@@ -7,6 +7,8 @@
 
 
 {% if hierarchy_data %}
+    <!-- TODO: Operation -->
+
     <!-- Goal model -->
     <div id="goal_model_div"></div>
     <!-- Export the goal model -->
@@ -49,18 +51,20 @@
         });
 
         // Create rows for the org chart
-        var rows = hierarchyData.map(function(item) {
+        var rows = [];
+
+        hierarchyData.forEach(function(item) {
             var subgoalId = item.subgoal_id;
             var subgoalName = item.subgoal_name;
             var highLevelGoalId = item.high_level_goal_id;
             var highLevelGoalName = item.high_level_goal_name;
+            var refinement = item.refinement;
 
             // Check if the subgoal is a leaf node
             var isLeaf = !parentMap[subgoalId];
 
             var subgoalContent = '[' + item.subgoal_goal_type + '] ' + '<a href="/contextualization/' + subgoalId + '">' + subgoalName + '</a>';
-            if (isLeaf)
-            {
+            if (isLeaf) {
                 subgoalContent += ' <span style="white-space: nowrap;">' +
                     '<form method="POST" action="/goal_model_generation" style="display:inline;" onsubmit="return confirm(\'Are you sure you want to delete this subgoal?\');">' +
                     '<input type="hidden" name="subgoal_id" value="' + item.subgoal_id + '">' +
@@ -74,12 +78,40 @@
                     '</span>';
             }
 
-            // If there is no highLevelGoalId, set it to null
-            return [
-                { 'v': subgoalContent, 'f': subgoalContent },
-                highLevelGoalId ? '[' + item.high_level_goal_goal_type + '] ' + '<a href="/contextualization/' + highLevelGoalId + '">' + highLevelGoalName + '</a>' : null,
-                'Goal'
-            ];
+            var highLevelGoalContent = '[' + item.high_level_goal_goal_type + '] ' + '<a href="/contextualization/' + highLevelGoalId + '">' + highLevelGoalName + '</a>';
+
+            // Add the refinement node if present
+            if (refinement) {
+                var refinementNode = '<div class="refinement-node" style="background-color: #e0e0e0;">' + refinement + '</div>';
+
+                // Add the high-level goal node
+                if (highLevelGoalId && !rows.some(row => row[0].v === highLevelGoalContent)) {
+                    rows.push([
+                        { 'v': highLevelGoalContent, 'f': highLevelGoalContent },
+                        null,
+                        'Goal'
+                    ]);
+                }
+
+                rows.push([
+                    { 'v': refinementNode, 'f': refinementNode },
+                    highLevelGoalContent,
+                    'Refinement'
+                ]);
+
+                rows.push([
+                    { 'v': subgoalContent, 'f': subgoalContent },
+                    refinementNode,
+                    'Goal'
+                ]);
+            } else {
+                // Add the current subgoal to the rows
+                rows.push([
+                    { 'v': subgoalContent, 'f': subgoalContent },
+                    highLevelGoalId ? highLevelGoalContent : null,
+                    'Goal'
+                ]);
+            }
         });
 
         // Add rows to the data table
@@ -96,9 +128,8 @@
 
         google.visualization.events.addListener(chart, 'ready', function () {
             goal_model_div.innerHTML = '<img id="chart" src=' + chart.getImageURI() + '>';
-            document.getElementById("download_link").setAttribute("href", chart.getImageURI())
-});
-
+            document.getElementById("download_link").setAttribute("href", chart.getImageURI());
+        });
     }
 </script>
 {% endblock %}
