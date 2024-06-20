@@ -18,7 +18,7 @@ import torch
 import os
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
-from utils import test_entailment, triple_sentiment_analysis_api
+from utils import test_entailment_api, triple_sentiment_analysis_api
 from graph_explorator import graph_explorator
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
@@ -263,12 +263,12 @@ async def contextualization(request: Request, goal_type: str = Form(...), highle
         transformed_anchor_points["OBJECT"] = anchor_points_df["OBJECT"].values
 
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
-        entailment_result = test_entailment(transformed_anchor_points, tokenizer_nli, model_nli)
+        entailment_result = test_entailment_api(transformed_anchor_points, model_nli_name)
         print("\nENTAILMENT RESULTS:")
         print(entailment_result)
 
         # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator(entailment_result, highlevelgoal, domain_graph, tokenizer_nli, model_nli)
+        entailed_triples_df = graph_explorator(entailment_result, highlevelgoal, domain_graph, model_nli_name)
 
         # --- Generate text ---
         all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in

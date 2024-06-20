@@ -77,6 +77,73 @@ def detect_entailment(premise, hypothesis, model_name, model=None, tokenizer=Non
     return label, proba
 
 
+def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_results=False):
+    """
+    Labels two sentences, a premise and a hypothesis, as either **entailed**, **neutral** or **contradictory**.
+
+    Parameters
+    ----------
+    premise :      str
+                   The premise for the textual entailment evaluation.
+    hypothesis :   str
+                   The hypothesis for the textual entailment evaluation.
+    model_name :   str or os.PathLike
+                   Can be either:
+
+                       - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
+                         Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
+                         user or organization name, like `dbmdz/bert-base-german-cased`.
+                       - A path to a *directory* containing vocabulary files required by the tokenizer, for instance
+                         saved using the [`~PreTrainedTokenizer.save_pretrained`] method, e.g., `./my_model_directory/`.
+                       - A path or url to a single saved vocabulary file if and only if the tokenizer only requires a
+                         single vocabulary file (like Bert or XLNet), e.g.: `./my_model_directory/vocab.txt`. (Not
+                         applicable to all derived classes)
+    max_length :   int, default=256
+                   The maximum number of tokens handled by the model referred to by `model_name`.
+    full_results : bool, default=False
+                   If True, returns a dict containing the scores for each label. Otherwise, returns only the best label
+                   and the associated score.
+
+    Returns
+    -------
+    tuple[str, float]|dict[str, float]
+        A tuple composed of two elements:
+
+            - A label representing the entailment relationship between the `premise` and the `hypothesis`. This label is
+              either **entailment**, **neutral** or **contradiction**
+            - The certainty score obtained by the model for the label identified as most probable.
+
+        If `full_results` is True, returns a dict where the keys are the `entailment`, `neutral` and `contradiction`
+        labels and values are the certainty scores obtained for each label.
+    """
+    API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
+    API_TOKEN = "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"
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+
+    data = {
+        'inputs': {
+            'text': premise,
+            'text_pair': hypothesis
+        },
+        "parameters": {'max_length': max_length},
+        "options": {'wait_for_model': True}
+    }
+
+    response = requests.post(API_URL, headers=headers, json=data)
+
+    if response.status_code < 200 or response.status_code > 399:
+        print(response.json())
+        response.raise_for_status()
+
+    results = response.json()
+
+    if not full_results:
+        return results[0]["label"], results[0]["score"]
+
+    dict_predicted_probability = {i["label"]: i["score"] for i in results}
+    return dict_predicted_probability
+
+
 def triple_sentiment_analysis_api(triple, neutral_predicates=None):
     """
         Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple through the HuggingFace API.
@@ -111,54 +178,23 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None):
 
     data = {
         "inputs": " ".join(triple),
-        "wait_for_model": 'true'
+        "options": {"wait_for_model": True}
     }
 
-    sentiment = requests.post(API_URL, headers=headers, json=data).json()[0][0]
+    response = requests.post(API_URL, headers=headers, json=data)
+
+    if response.status_code < 200 or response.status_code > 399:
+        print(response.json())
+        response.raise_for_status()
+
+    sentiment = response.json()[0][0]
 
     return sentiment["label"], sentiment["score"]
 
 
-def triple_sentiment_analysis(triple, sentiment_task, neutral_predicates=None) -> tuple[str, float]:
-    """
-    Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple.
-
-    Parameters
-    ----------
-    triple :             list[str]
-                         A list composed of three strings:
-
-                             #. A subject
-                             #. A predicate
-                             #. An object
-
-    sentiment_task :     Pipeline
-                         A Transformers pipeline for sentiment analysis. We recommend the use of the following pipeline:
-
-                         ``pipeline("sentiment-analysis", model=model_path, tokenizer=model_path)``
-    neutral_predicates : list[str], optional
-                         A list of predicates inducing automatically neutral triples. Predicates from the RDF ontology
-                         (e.g., `rdf:type`) are often relevant for this list.
-
-    Returns
-    -------
-    tuple[str, float]
-        A tuple composed of the most probable sentiment for the triple and its certainty score.
-    """
-    if neutral_predicates is None:
-        neutral_predicates = []
-
-    if triple[1] in neutral_predicates:
-        return "neutral", 1
-
-    sentiment = sentiment_task(" ".join(triple))[0]
-
-    return sentiment["label"], sentiment["score"]
-
-
-def test_entailment(df, tokenizer, model_nli):
+def test_entailment_api(df, model_name):
     # apply the detect_entailment() function and create two new columns
-    df['ENTAILMENT_SCORES'] = df.apply(lambda row: detect_entailment(row['PREMISE'], row['HYPOTHESIS'], "", tokenizer=tokenizer, model=model_nli,full_results=True), axis=1)
+    df['ENTAILMENT_SCORES'] = df.apply(lambda row: detect_entailment_api(row['PREMISE'], row['HYPOTHESIS'], model_name, full_results=True), axis=1)
 
     df['ENTAILMENT'] = df.apply(lambda row: row['ENTAILMENT_SCORES']['entailment'], axis=1).round(5)
     df['NEUTRAL'] = df.apply(lambda row: row['ENTAILMENT_SCORES']['neutral'], axis=1).round(5)

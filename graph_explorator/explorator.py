@@ -1,9 +1,9 @@
 import pandas as pd
 
-from utils.functions import get_neighbors, test_entailment
+from utils.functions import get_neighbors, test_entailment_api
 
 
-def graph_explorator(df, goal, graph, tokenizer_nli, model_nli):
+def graph_explorator(df, goal, graph, model_nli_name):
     entailed_triples_df = pd.DataFrame(columns=["SUBGOALS", "SUBGOALS_SERIALIZED", "SCORE", "NLI_LABEL"])
 
     for _, row in df[["PREMISE", "HYPOTHESIS", "PREMISE_SERIALIZED", "ENTAILMENT", "NLI_LABEL"]].iterrows():
@@ -33,7 +33,7 @@ def graph_explorator(df, goal, graph, tokenizer_nli, model_nli):
             concatenated_triples_df = pd.DataFrame(concatenated_triples_dict)
 
             # --> test the entailment
-            entailment_concatenate_triples_result = test_entailment(concatenated_triples_df, tokenizer_nli, model_nli)
+            entailment_concatenate_triples_result = test_entailment_api(concatenated_triples_df, model_nli_name)
 
             # extract the highest score (entailment)
             entailment_concatenate_triples_best_score = entailment_concatenate_triples_result.head(1)
@@ -73,7 +73,7 @@ def graph_explorator(df, goal, graph, tokenizer_nli, model_nli):
                             concatenated_triples_df = pd.DataFrame(concatenated_triples_dict)
 
                             # --> test the entailment
-                            entailment_concatenate_triples_result = test_entailment(concatenated_triples_df, tokenizer_nli, model_nli)
+                            entailment_concatenate_triples_result = test_entailment_api(concatenated_triples_df, model_nli_name)
 
                             # update the previous score
                             entailment_score = current_score
