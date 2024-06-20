@@ -33,8 +33,6 @@ logging.set_verbosity_error()
 model_sts = SentenceTransformer('all-mpnet-base-v2')
 
 model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
-tokenizer_nli = AutoTokenizer.from_pretrained(model_nli_name)
-model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).to(device)
 
 model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
 tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
