@@ -2,7 +2,7 @@ from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter
 
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
@@ -142,7 +142,7 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -360,7 +360,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), highle
                 print("\nSubgoal added in the database!")
 
                 # Add the high-level goal and the subgoal in the database (table: hierarchy)
-                db_hierarchy = models.Hierarchy(high_level_goal_id=goal_id, subgoal_id=new_goal.id)
+                db_hierarchy = models.Hierarchy(high_level_goal_id=goal_id, refinement=refinement, subgoal_id=new_goal.id)
                 db.add(db_hierarchy)
                 db.commit()
                 print("\nUpdate the hierarchy!")

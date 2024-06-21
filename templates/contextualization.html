@@ -36,6 +36,16 @@
                   <option value="AVOID">AVOID</option>
                 </select>
             </div>
+            {% if goal_with_outputs is defined %}
+            <div class="input-group-prepend">
+                <!-- Refinement type -->
+                <select class="form-select" name="refinement" aria-label="refinement_selection">
+                  <option value="AND">AND</option>
+                  <option value="OR">OR</option>
+                  <option value="XOR">XOR</option>
+                </select>
+            </div>
+            {% endif %}
             <!-- Input - High-level goal -->
             <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal"
                    id="input-datalist" list="list-goal" required>
