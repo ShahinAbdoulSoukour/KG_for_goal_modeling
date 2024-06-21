@@ -26,7 +26,7 @@
     <ex:Predicts rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensors"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Forecasting"/>
-    <ex:Affects rdf:resource="http://www.semanticweb.org/Flooding#Evacuation_Of_Residents"/>
+    <ex:Recommends rdf:resource="http://www.semanticweb.org/Flooding#Evacuation_Of_Residents"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Alerts"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks">
@@ -201,7 +201,7 @@
     <ex:Causes rdf:resource="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks"/>
     <ex:Causes rdf:resource="http://www.semanticweb.org/Flooding#Traffic_Diruption"/>
     <ex:Causes rdf:resource="http://www.semanticweb.org/Flooding#Business_Disruption"/>
-    <ex:Affects rdf:resource="http://www.semanticweb.org/Flooding#Water_Quality"/>
+    <ex:Impacts rdf:resource="http://www.semanticweb.org/Flooding#Water_Quality"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Business_Disruption">
     <rdfs:label>Business diruption</rdfs:label>
@@ -216,7 +216,7 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Water_Quality">
     <rdfs:label>Water quality</rdfs:label>
     <ex:Impacts rdf:resource="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks"/>
-    <ex:Affects rdf:resource="http://www.semanticweb.org/Flooding#Environmental_Damage"/>
+    <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Environmental_Damage"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Environmental_Damage">
     <rdfs:label>Environmental damage</rdfs:label>
@@ -257,8 +257,8 @@
     <rdfs:label>Social media notification</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Communication_Channels"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Affects">
-    <rdfs:label>Affects</rdfs:label>
+  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Recommends">
+    <rdfs:label>Recommends</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Floodwalls">
     <rdfs:label>Floodwalls</rdfs:label>
