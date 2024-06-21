@@ -10,12 +10,13 @@ from starlette.responses import RedirectResponse
 from database import SessionLocal, engine
 import models
 
+import os
+os.environ['HF_HOME'] = os.getcwd() + "/cache/"
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, T5ForConditionalGeneration, T5Tokenizer, pipeline
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
 import torch
-import os
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import triple_sentiment_analysis, test_entailment
