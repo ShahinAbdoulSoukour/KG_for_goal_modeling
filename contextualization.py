@@ -13,7 +13,7 @@ import models
 import os
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
 import pandas as pd
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, T5ForConditionalGeneration, T5Tokenizer, pipeline
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
 import torch
@@ -42,8 +42,6 @@ tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 # --- Import the Knowledge Graph (KG) ---
 # TODO: upload a knowledge graph (RDF file)
 domain_graph = graph_extender("./flooding_graph_V2.rdf")
-# domain_graph = rdflib.Graph()
-# domain_graph.parse("./flooding_graph.rdf")
 
 
 # Templates (Jinja2)
