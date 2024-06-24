@@ -39,19 +39,16 @@
         // Get the hierarchy data
         var hierarchyData = {{ hierarchy_data|tojson }};
 
-        // Create a map to track parent-child relationships
-        var parentMap = {};
+        // Collect all high-level goal IDs to determine leaf nodes
+        var highLevelGoalIds = new Set();
         hierarchyData.forEach(function(item) {
-            if (item.high_level_goal_id) {
-                if (!parentMap[item.high_level_goal_id]) {
-                    parentMap[item.high_level_goal_id] = [];
-                }
-                parentMap[item.high_level_goal_id].push(item.subgoal_id);
-            }
+            highLevelGoalIds.add(item.high_level_goal_id);
         });
 
         // Create rows for the org chart
         var rows = [];
+        var goalMap = {};
+        var refinementMap = {};
 
         hierarchyData.forEach(function(item) {
             var subgoalId = item.subgoal_id;
@@ -60,8 +57,8 @@
             var highLevelGoalName = item.high_level_goal_name;
             var refinement = item.refinement;
 
-            // Check if the subgoal is a leaf node
-            var isLeaf = !parentMap[subgoalId];
+            // Determine if this subgoal is a leaf node
+            var isLeaf = !highLevelGoalIds.has(subgoalId);
 
             var subgoalContent = '[' + item.subgoal_goal_type + '] ' + '<a href="/contextualization/' + subgoalId + '">' + subgoalName + '</a>';
             if (isLeaf) {
@@ -78,41 +75,54 @@
                     '</span>';
             }
 
-            var highLevelGoalContent = '[' + item.high_level_goal_goal_type + '] ' + '<a href="/contextualization/' + highLevelGoalId + '">' + highLevelGoalName + '</a>';
+            var highLevelGoalContent = highLevelGoalId ?
+                '[' + item.high_level_goal_goal_type + '] ' + '<a href="/contextualization/' + highLevelGoalId + '">' + highLevelGoalName + '</a>' :
+                null;
 
-            // Add the refinement node if present
-            if (refinement) {
-                var refinementNode = '<div class="refinement-node" style="background-color: #e0e0e0;">' + refinement + '</div>';
-
-                // Add the high-level goal node
-                if (highLevelGoalId && !rows.some(row => row[0].v === highLevelGoalContent)) {
-                    rows.push([
-                        { 'v': highLevelGoalContent, 'f': highLevelGoalContent },
-                        null,
-                        'Goal'
-                    ]);
-                }
-
+            if (highLevelGoalId && !goalMap[highLevelGoalId]) {
+                goalMap[highLevelGoalId] = highLevelGoalContent;
                 rows.push([
-                    { 'v': refinementNode, 'f': refinementNode },
-                    highLevelGoalContent,
-                    'Refinement'
-                ]);
-
-                rows.push([
-                    { 'v': subgoalContent, 'f': subgoalContent },
-                    refinementNode,
-                    'Goal'
-                ]);
-            } else {
-                // Add the current subgoal to the rows
-                rows.push([
-                    { 'v': subgoalContent, 'f': subgoalContent },
-                    highLevelGoalId ? highLevelGoalContent : null,
+                    { 'v': highLevelGoalContent, 'f': highLevelGoalContent },
+                    null,
                     'Goal'
                 ]);
             }
+
+            if (refinement) {
+                var refinementKey = refinement + '_' + highLevelGoalId;
+                if (!refinementMap[refinementKey]) {
+                    refinementMap[refinementKey] = refinementKey;
+                    rows.push([
+                        { 'v': refinementMap[refinementKey], 'f': '<div class="refinement-node" style="background-color: #e0e0e0;">' + refinement + '</div>' },
+                        highLevelGoalContent,
+                        'Refinement'
+                    ]);
+                }
+
+                if (!goalMap[subgoalId]) {
+                    goalMap[subgoalId] = subgoalContent;
+                    rows.push([
+                        { 'v': subgoalContent, 'f': subgoalContent },
+                        refinementMap[refinementKey],
+                        'Goal'
+                    ]);
+                }
+            } else {
+                if (!goalMap[subgoalId]) {
+                    goalMap[subgoalId] = subgoalContent;
+                    rows.push([
+                        { 'v': subgoalContent, 'f': subgoalContent },
+                        highLevelGoalContent,
+                        'Goal'
+                    ]);
+                }
+            }
         });
+
+        // Handle case with only one goal without a parent
+        if (rows.length === 1 && rows[0][1] === null) {
+            rows[0][1] = null;
+        }
 
         // Add rows to the data table
         data.addRows(rows);
@@ -132,4 +142,8 @@
         });
     }
 </script>
+
+
+
+
 {% endblock %}
