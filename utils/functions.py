@@ -117,7 +117,7 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
         labels and values are the certainty scores obtained for each label.
     """
     API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
-    API_TOKEN = "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"
+    API_TOKEN = "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"
     headers = {"Authorization": f"Bearer {API_TOKEN}"}
 
     data = {
@@ -167,7 +167,7 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None):
             A tuple composed of the most probable sentiment for the triple and its certainty score.
         """
     API_URL = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
-    API_TOKEN = "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"
+    API_TOKEN = "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"
     headers = {"Authorization": f"Bearer {API_TOKEN}"}
 
     if neutral_predicates is None:
