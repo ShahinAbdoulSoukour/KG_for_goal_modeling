@@ -58,6 +58,11 @@
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
             </div>
+            {%if hlg_id is defined%}
+            <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
+            {%else%}
+            <input type="hidden" name="hlg_id" value="-1">
+            {%endif%}
         </div>
         <br>
 

@@ -139,11 +139,12 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
                                                                          'highlevelgoal': highlevelgoal,
                                                                          'outputs': outputs_df,
                                                                          'goal_with_outputs': goal_with_outputs,
+                                                                         'hlg_id': hlg_id,
                                                                          'all_goal': all_goal})
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -360,11 +361,12 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                 db.commit()
                 print("\nSubgoal added in the database!")
 
-                # Add the high-level goal and the subgoal in the database (table: hierarchy)
-                db_hierarchy = models.Hierarchy(high_level_goal_id=goal_id, refinement=refinement, subgoal_id=new_goal.id)
-                db.add(db_hierarchy)
-                db.commit()
-                print("\nUpdate the hierarchy!")
+                if hlg_id != -1:
+                    # Add the high-level goal and the subgoal in the database (table: hierarchy)
+                    db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
+                    db.add(db_hierarchy)
+                    db.commit()
+                    print("\nUpdate the hierarchy!")
 
             # Extract the entailed triples and the generated texts (to print)
             outputs = db.query(models.Outputs).filter(models.Outputs.goal_id == new_goal.id).all()
@@ -388,15 +390,28 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                 'unique_triples_entailed': enumerate(unique_triples_entailed),
                 'outputs': outputs_df,
                 'goal_with_outputs': goal_with_outputs,
+                'hlg_id': new_goal.id,
                 'all_goal': all_goal,  # for the input (for autocompletion)
             })
         else:
             message = "No triple"
             print("\nNo triples!")
+
+            new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
+            db.add(new_goal)
+            db.commit()
+
+            if hlg_id != -1:
+                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
+                db.add(db_hierarchy)
+                db.commit()
+                print("\nUpdate the hierarchy!")
+
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
                 'highlevelgoal': highlevelgoal,
                 'message': message,
+                'hlg_id': new_goal.id,
                 'goal_with_outputs': goal_with_outputs,
                 'all_goal': all_goal,  # for the input (for autocompletion)
             })
