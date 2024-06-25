@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 
 import requests
@@ -77,7 +78,7 @@ def detect_entailment(premise, hypothesis, model_name, model=None, tokenizer=Non
     return label, proba
 
 
-def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_results=False):
+def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_results=False, test_again=0):
     """
     Labels two sentences, a premise and a hypothesis, as either **entailed**, **neutral** or **contradictory**.
 
@@ -116,24 +117,35 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
         If `full_results` is True, returns a dict where the keys are the `entailment`, `neutral` and `contradiction`
         labels and values are the certainty scores obtained for each label.
     """
-    API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
-    API_TOKEN = "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"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    API_URL = f"https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
+    API_TOKEN = "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"
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Content-Type": "application/json"
+    }
 
     data = {
         'inputs': {
             'text': premise,
             'text_pair': hypothesis
         },
-        "parameters": {'max_length': max_length},
+        "parameters": {
+            'max_length': max_length,
+            "return_all_scores": True
+        },
         "options": {'wait_for_model': True}
     }
 
     response = requests.post(API_URL, headers=headers, json=data)
 
     if response.status_code < 200 or response.status_code > 399:
-        print(response.json())
-        response.raise_for_status()
+        if test_again < 3:
+            time.sleep(3)
+            return detect_entailment_api(premise, hypothesis, model_name, max_length=max_length, full_results=full_results, test_again=test_again+1)
+        else:
+            print(str(response.content))
+            response.raise_for_status()
 
     results = response.json()
 
@@ -144,7 +156,7 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
     return dict_predicted_probability
 
 
-def triple_sentiment_analysis_api(triple, neutral_predicates=None):
+def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0):
     """
         Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple through the HuggingFace API.
 
@@ -166,9 +178,13 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None):
         tuple[str, float]
             A tuple composed of the most probable sentiment for the triple and its certainty score.
         """
-    API_URL = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
-    API_TOKEN = "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"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    API_URL = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
+    API_TOKEN = "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"
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Content-Type": "application/json"
+    }
 
     if neutral_predicates is None:
         neutral_predicates = []
@@ -178,16 +194,21 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None):
 
     data = {
         "inputs": " ".join(triple),
+        "parameters": {},
         "options": {"wait_for_model": True}
     }
 
     response = requests.post(API_URL, headers=headers, json=data)
 
     if response.status_code < 200 or response.status_code > 399:
-        print(response.json())
-        response.raise_for_status()
+        if test_again < 3:
+            time.sleep(3)
+            return triple_sentiment_analysis_api(triple, neutral_predicates=neutral_predicates, test_again=test_again+1)
+        else:
+            print(str(response.content))
+            response.raise_for_status()
 
-    sentiment = response.json()[0][0]
+    sentiment = response.json()[0]
 
     return sentiment["label"], sentiment["score"]
 
