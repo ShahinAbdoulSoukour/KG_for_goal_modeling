@@ -76,7 +76,7 @@
             <thead>
             <tr>
                 <th>Generated text</th>
-                <th>Entailed triple</th>
+                <th>Information extracted</th>
             </tr>
             </thead>
             <tbody>
@@ -88,7 +88,7 @@
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
                                id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                        <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
+                        <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
                     </div>
                     {% endfor %}
                 </td>
@@ -113,7 +113,7 @@
         <thead>
         <tr>
             <th>Generated text</th>
-            <th>Entailed triple</th>
+            <th>Information extracted</th>
         </tr>
         </thead>
         <tbody>
@@ -125,7 +125,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
                            id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                    <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t }}</label>
+                    <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
                 </div>
                 {% endfor %}
             </td>
