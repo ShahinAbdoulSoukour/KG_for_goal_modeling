@@ -204,7 +204,7 @@
     <ex:Impacts rdf:resource="http://www.semanticweb.org/Flooding#Water_Quality"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Business_Disruption">
-    <rdfs:label>Business diruption</rdfs:label>
+    <rdfs:label>Business disruption</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Railroads_Damage">
     <rdfs:label>Railroads damage</rdfs:label>
@@ -324,7 +324,7 @@
     <rdfs:label>Impacts</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Traffic_Diruption">
-    <rdfs:label>Traffic diruption</rdfs:label>
+    <rdfs:label>Traffic disruption</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Overtopping">
     <rdfs:label>Overtopping</rdfs:label>
