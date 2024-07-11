@@ -64,6 +64,7 @@
             <input type="hidden" name="hlg_id" value="-1">
             {%endif%}
         </div>
+        <p><u>Reminder</u>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
         <br>
 
         {% if not goal_with_outputs %} <!-- -->
@@ -75,8 +76,8 @@
         <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
             <thead>
             <tr>
-                <th>Generated text</th>
-                <th>Information extracted</th>
+                <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
             </tr>
             </thead>
             <tbody>
@@ -113,8 +114,8 @@
     <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
         <thead>
         <tr>
-            <th>Generated text</th>
-            <th>Information extracted</th>
+            <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+            <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
         </tr>
         </thead>
         <tbody>
@@ -143,8 +144,8 @@
 
 {% block scripts %}
 <script>
-
     $(document).ready( function () {
+        $('[data-toggle="tooltip"]').tooltip({"html": true})
         $('#data_triples').DataTable();
 
         $("#okBtn").click(function() {
