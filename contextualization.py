@@ -321,50 +321,36 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         processed_data_df = pd.DataFrame(processed_data)
 
         if unique_triples_entailed:
-            if not modified_filtered_triples:
-                # Add the goal (as high-level goal) in the database (table: goal)
-                new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
-                db.add(new_goal)
-                db.commit()
+            # Add the goal (as high-level goal or subgoal) in the database (table: goal)
+            new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
+            db.add(new_goal)
+            db.commit()
 
-                # Add the entailed triples and the generated text in the database (table: outputs)
-                for row in processed_data_df.itertuples():
-                    new_results = models.Outputs(generated_text=row.GENERATED_TEXT,
-                                                 goal_id=new_goal.id)
-                    new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
-                    db.add(new_results)
-                db.commit()
+            # Add the entailed triples and the generated text in the database (table: outputs)
+            for row in processed_data_df.itertuples():
+                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_id=new_goal.id)
+                new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
+                db.add(new_results)
+            db.commit()
 
-                print("\nHigh-level goal added in the database!")
-            else:
-                # Add the goal (as subgoal) in the database (table: goal)
-                new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
-                db.add(new_goal)
-                db.commit()
-
-                # Add the entailed triples and the generated text in the database (table: outputs)
-                for row in processed_data_df.itertuples():
-                    new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_id=new_goal.id)
-                    new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
-                    db.add(new_results)
-                db.commit()
-
+            # If certain triples are selected
+            if modified_filtered_triples:
                 for row in modified_filtered_triples_df.itertuples():
                     # Add the filtered triples (selected by the designer for creating subgoals) to the database
                     # (table: filtered_triple)
-                    filtered_triple = models.Triple_Filtered(subgoal_id=new_goal.id, high_level_goal_id=row.high_level_goal_id)
+                    filtered_triple = models.Triple_Filtered(subgoal_id=new_goal.id,
+                                                             high_level_goal_id=row.high_level_goal_id)
                     filtered_triple.set_entailed_triple(row.triple_filtered_from_hlg)
                     db.add(filtered_triple)
-
                 db.commit()
                 print("\nSubgoal added in the database!")
 
-                if hlg_id != -1:
-                    # Add the high-level goal and the subgoal in the database (table: hierarchy)
-                    db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
-                    db.add(db_hierarchy)
-                    db.commit()
-                    print("\nUpdate the hierarchy!")
+            if hlg_id != -1:
+                # Add the high-level goal and the subgoal in the database (table: hierarchy)
+                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
+                db.add(db_hierarchy)
+                db.commit()
+                print("\nUpdate the hierarchy!")
 
             # Extract the entailed triples and the generated texts (to print)
             outputs = db.query(models.Outputs).filter(models.Outputs.goal_id == new_goal.id).all()
@@ -395,6 +381,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             message = "No triple"
             print("\nNo triples!")
 
+            # Add the goal if no triples are identified
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
             db.commit()
