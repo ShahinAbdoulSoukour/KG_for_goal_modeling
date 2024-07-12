@@ -1,3 +1,5 @@
+import re
+
 from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter
@@ -130,10 +132,13 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
     data = []
 
     for output in goal_with_outputs.outputs:
+        match_data = re.match(r"\[(?P<prefix>\w+)] (?P<goal>.+)", output.generated_text)
+        prefix, goal = match_data.group("prefix"), match_data.group("goal")
         data.append({
             'id': output.id,
             'goal_id': output.goal_id,
-            'generated_text': output.generated_text,
+            'prefix': prefix,
+            'generated_text': goal,
             'entailed_triple': output.get_entailed_triples()
         })
 
@@ -321,7 +326,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
 
                 processed_data.append({
                     "ENTAILED_TRIPLE": triples_to_process,
-                    "GENERATED_TEXT": prediction
+                    "GENERATED_TEXT": prediction,
+                    # "PREFIX": "AVOID" if is_avoid else "ACHIEVE"
                 })
 
         # Create DataFrame from the list of dictionaries
@@ -379,10 +385,13 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             # Extract data into a list of dictionaries
             data = []
             for output in outputs:
+                match_data = re.match(r"\[(?P<prefix>\w+)] (?P<goal>.+)", output.generated_text)
+                prefix, goal = match_data.group("prefix"), match_data.group("goal")
                 data.append({
                     'id': output.id,
                     'goal_id': output.goal_id,
-                    'generated_text': output.generated_text,
+                    'prefix': prefix,
+                    'generated_text': goal,
                     'entailed_triple': output.get_entailed_triples()
                 })
 
