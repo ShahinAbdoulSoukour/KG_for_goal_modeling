@@ -149,6 +149,7 @@
 {% block scripts %}
 <script>
     $(document).ready( function() {
+        $('#createGoalNav a').addClass('active')
         $('[data-toggle="tooltip"]').tooltip({"html": true, "placement": "bottom", "trigger": "hover"})
         $('[data-toggle="tooltip"]').click(function() {
             $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
