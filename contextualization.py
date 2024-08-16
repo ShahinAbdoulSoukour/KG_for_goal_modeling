@@ -1,5 +1,3 @@
-import re
-
 from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter
@@ -23,7 +21,7 @@ from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import test_entailment_api, triple_sentiment_analysis_api
 from graph_explorator import graph_explorator
-from g2t_generator import g2t_generator
+#from g2t_generator import g2t_generator
 from graph_extender import graph_extender
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -37,8 +35,8 @@ model_sts = SentenceTransformer('all-mpnet-base-v2')
 
 model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
 
-model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
-tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
+#model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
+#tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 
 
 # --- Import the Knowledge Graph (KG) ---
@@ -125,13 +123,10 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
     data = []
 
     for output in goal_with_outputs.outputs:
-        match_data = re.match(r"\[(?P<prefix>\w+)] (?P<goal>.+)", output.generated_text)
-        prefix, goal = match_data.group("prefix"), match_data.group("goal")
         data.append({
             'id': output.id,
             'goal_id': output.goal_id,
-            'prefix': prefix,
-            'generated_text': goal,
+            'goal_type': output.goal_type, #
             'entailed_triple': output.get_entailed_triples()
         })
 
@@ -156,11 +151,15 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
     if not goal_with_outputs:
         modified_filtered_triples = []
 
+        print(filtered_out_triples_with_goal_id)
+
         # If there are some filtered triples, get the high-level goal id and the triples
         if filtered_out_triples_with_goal_id:
             triples_with_ids = []
             for item in filtered_out_triples_with_goal_id:
                 goal_id, triple = item.split('_', 1)
+                print("goal_id:")
+                print(goal_id)
                 triples_with_ids.append({
                     'goal_id': goal_id, # High-level goal ID
                     'filtered_triple': triple # Filtered triples (selected by the designer)
@@ -243,44 +242,57 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         print("\nANCHOR TRIPLES:")
         print(anchor_points_df)
 
-        # --- Transform negative triples ---
-        anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
-            lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
+        # --- Transform negative triples ---  --- Sentiment analysis ---
+        anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []
+        goal_types = []  # to store the corresponding "GOAL_TYPE" based on whether the sentiment is negative or not.
 
         for triple, sentiment in zip(anchor_points_df["PREMISE"], anchor_points_df["SENTIMENT"]):
             if sentiment == "negative":
                 ### Transformation
                 transformed_triples_premise.append("Prevent that " + triple)
+                goal_types.append("AVOID")
             else:
                 transformed_triples_premise.append(triple)
+                goal_types.append("ACHIEVE")
 
-        transformed_anchor_points = pd.DataFrame(transformed_triples_premise, columns=["PREMISE"])
+        # Create a new DataFrame with the transformed premises and goal types
+        transformed_anchor_points = pd.DataFrame({
+            "GOAL_TYPE": goal_types,
+            "PREMISE": transformed_triples_premise
+        })
         transformed_anchor_points["HYPOTHESIS"] = anchor_points_df["HYPOTHESIS"].values
-
         transformed_anchor_points["PREMISE_SERIALIZED"] = anchor_points_df["TRIPLE_SERIALIZED"].values
         transformed_anchor_points["SUBJECT"] = anchor_points_df["SUBJECT"].values
         transformed_anchor_points["PREDICATE"] = anchor_points_df["PREDICATE"].values
         transformed_anchor_points["OBJECT"] = anchor_points_df["OBJECT"].values
 
+        # --- Print transformed anchor points ---
+        print("\nTRANSFORMED ANCHOR POINTS:")
+        print(transformed_anchor_points.to_string())
+
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
         entailment_result = test_entailment_api(transformed_anchor_points, model_nli_name)
         print("\nENTAILMENT RESULTS:")
-        print(entailment_result)
+        print(entailment_result.to_string())
 
         # --- Explore graph to improve contextualization ---
         entailed_triples_df = graph_explorator(entailment_result, highlevelgoal, domain_graph, model_nli_name)
 
-        # --- Generate text ---
+        # --- ### ---
         all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in
                                 triples]
+
+        print("\nall_triples_entailed")
+        print(all_triples_entailed)
 
         if not entailed_triples_df.empty:
             all_triples_entailed.append(triples[0] for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist())
 
         unique_triples_entailed = []
+
         for triple in all_triples_entailed:
             if (triple not in unique_triples_entailed) and (type(triple) is list):
                 unique_triples_entailed.append(triple)
@@ -291,53 +303,44 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         triples_already_processed = []
         processed_data = []
         triples_to_process_grouped = []
-        group_is_avoid_list = []
 
         for row in entailed_triples_df.itertuples():
             triples_to_process = []
 
-            text_version = row.SUBGOALS.split(". ")[-1]
-            group_is_avoid = "Prevent that" in text_version
-            group_is_avoid_list.append(group_is_avoid)
-
             for triple in row.SUBGOALS_SERIALIZED:
                 if (triple not in triples_already_processed) and (type(triple) is list):
                     triples_to_process.append(triple)
+
             if triples_to_process:
-                triples_to_process_grouped.append(triples_to_process)
+                triples_to_process_grouped.append((triples_to_process, row.GOAL_TYPE))
 
             triples_already_processed.extend(triples_to_process)
 
         if triples_to_process_grouped:
-            predictions = g2t_generator(triples_to_process_grouped, model=model_g2t, tokenizer=tokenizer_g2t)
-
-            for is_avoid, prediction, triples_to_process in zip(group_is_avoid_list, predictions, triples_to_process_grouped):
-                if is_avoid:
-                    prediction = "[AVOID] " + prediction
-                else:
-                    prediction = "[ACHIEVE] " + prediction
-
+            for triples, goal_type in triples_to_process_grouped:
                 processed_data.append({
-                    "ENTAILED_TRIPLE": triples_to_process,
-                    "GENERATED_TEXT": prediction,
-                    # "PREFIX": "AVOID" if is_avoid else "ACHIEVE"
+                    "ENTAILED_TRIPLE": triples,
+                    "GOAL_TYPE": goal_type
                 })
 
         # Create DataFrame from the list of dictionaries
         processed_data_df = pd.DataFrame(processed_data)
 
         if unique_triples_entailed:
-            # Add the goal (as high-level goal or subgoal) in the database (table: goal)
+            # Add the goal (as high-level goal) in the database (table: goal)
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
             db.commit()
 
             # Add the entailed triples and the generated text in the database (table: outputs)
             for row in processed_data_df.itertuples():
-                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_id=new_goal.id)
+                new_results = models.Outputs(goal_type=row.GOAL_TYPE,
+                                             goal_id=new_goal.id)
                 new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                 db.add(new_results)
             db.commit()
+
+            print("\nHigh-level goal added in the database!")
 
             # If certain triples are selected
             if modified_filtered_triples:
@@ -364,13 +367,10 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             # Extract data into a list of dictionaries
             data = []
             for output in outputs:
-                match_data = re.match(r"\[(?P<prefix>\w+)] (?P<goal>.+)", output.generated_text)
-                prefix, goal = match_data.group("prefix"), match_data.group("goal")
                 data.append({
                     'id': output.id,
                     'goal_id': output.goal_id,
-                    'prefix': prefix,
-                    'generated_text': goal,
+                    'goal_type': output.goal_type,
                     'entailed_triple': output.get_entailed_triples()
                 })
 
@@ -390,7 +390,6 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             message = "No triple"
             print("\nNo triples!")
 
-            # Add the goal if no triples are identified
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
             db.commit()

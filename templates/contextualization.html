@@ -41,16 +41,15 @@
             <div class="input-group-prepend">
                 <!-- Refinement type -->
                 <select id="refinement" class="form-select text-black-50 bg-light" name="refinement" aria-label="refinement_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal: <ul><li>should be satisfied additionally to its sibling goals (<b>AND</b> refinement)</li><li>is among a set of goals of which at least one should be satisfied (<b>OR</b> refinement)</li><li>is among a set of goals of which exactly one should be satisfied (<b>XOR</b> refinement)</li></ul>... to fulfill its parent.<br><br>If you do not plan to add siblings to your goal, use the <b>AND</b> refinement.">
-                  <option hidden disabled selected value="">Refinement</option>
-                  <option value="AND">AND</option>
-                  <option value="OR">OR</option>
-                  <option value="XOR">XOR</option>
+                    <option hidden disabled selected value="">Refinement</option>
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                    <option value="XOR">XOR</option>
                 </select>
             </div>
             {% endif %}
             <!-- Input - High-level goal -->
-            <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal"
-                   id="input-datalist" list="list-goal" required>
+            <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal" id="input-datalist" list="list-goal" required>
             <datalist id="list-goal">
                 {% for g in all_goal %}
                     <option value="{{ g.goal_name }}"></option>
@@ -58,7 +57,7 @@
             </datalist>
             <!-- Submit button -->
             <div class="input-group-append">
-                <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
+                <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
             </div>
             {%if hlg_id is defined%}
             <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
@@ -66,7 +65,7 @@
             <input type="hidden" name="hlg_id" value="-1">
             {%endif%}
         </div>
-        <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
+        <br>
 
         {% if not goal_with_outputs %} <!-- -->
 
@@ -77,16 +76,14 @@
         <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
             <thead>
             <tr>
-                <th>Type  <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-                <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of certain information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
-                <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
+                <th>Type</th>
+                <th>Information extracted</th>
             </tr>
             </thead>
             <tbody>
             {% for idx, row in outputs.iterrows() %} <!-- outputs -->
             <tr>
-                <td data-name="generated_text" class="generated_text">{{ row['prefix'] }}</td>
-                <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+                <td data-name="type" class="type">{{ row['goal_type'] }}</td>
                 <td>
                     {% for t in row['entailed_triple'] %}
                     <div class="form-check">
@@ -102,12 +99,12 @@
         </table>
     </form>
     {% else %}
-    {% if message is defined %}
-    <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
-    <div class="alert alert-danger" role="alert">
-        No entailed triples has been identified!
-    </div>
-    {% endif %}
+        {% if message is defined %}
+        <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
+        <div class="alert alert-danger" role="alert">
+            No entailed triples has been identified!
+        </div>
+        {% endif %}
     {% endif %}
 
     {% else %}
@@ -117,16 +114,14 @@
     <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
         <thead>
         <tr>
-            <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-            <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
-            <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
+            <th>Type</th>
+            <th>Information extracted</th>
         </tr>
         </thead>
         <tbody>
         {% for idx, row in outputs.iterrows() %} <!-- outputs -->
         <tr>
-            <td data-name="generated_text" class="generated_text">{{ row['prefix'] }}</td>
-            <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+            <td data-name="type" class="type">{{ row['goal_type'] }}</td>
             <td>
                 {% for t in row['entailed_triple'] %}
                 <div class="form-check">
@@ -149,12 +144,14 @@
 
 {% block scripts %}
 <script>
-    $(document).ready( function() {
+
+    $(document).ready( function () {
         $('#createGoalNav a').addClass('active')
         $('[data-toggle="tooltip"]').tooltip({"html": true, "placement": "bottom", "trigger": "hover"})
         $('[data-toggle="tooltip"]').click(function() {
             $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
         })
+
         $('#data_triples').DataTable();
 
         $("select").on("change", function() {
@@ -162,11 +159,13 @@
             $(this).css("background-color", "#ffffff")
             $(this).css("color", "#172b4d")
         })
+
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
+
         $("#okBtn").click(function() {
-            if ($("#input-datalist").val() && $("#goal_type").val() && $("#refinement").val()) {
+            if ($("#input-datalist").val() && $("#goal_type").val()) {
                 $(this).prop("disabled", true);
                 $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
 
@@ -177,6 +176,7 @@
 
                 $("#myForm").submit();
             } else {
+                //$("#input-datalist").css("background-color", "#ffda69");
                 if (!$("#input-datalist").val()) {
                     $("#input-datalist").removeClass("text-black-50 bg-light")
                     $("#input-datalist").css("background-color", "#ffda69");
@@ -184,10 +184,6 @@
                 if (!$("#goal_type").val()) {
                     $("#goal_type").removeClass("text-black-50 bg-light")
                     $("#goal_type").css("background-color", "#ffda69")
-                }
-                if (!$("#refinement").val()) {
-                    $("#refinement").removeClass("text-black-50 bg-light")
-                    $("#refinement").css("background-color", "#ffda69")
                 }
             }
         });
