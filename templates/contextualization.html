@@ -32,9 +32,9 @@
             <div class="input-group-prepend">
                 <!-- Goal type -->
                 <select id="goal_type" class="form-select text-black-50 bg-light" name="goal_type" aria-label="goal_type_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal will express a property that a system should satisfy (<b>ACHIEVE</b>) or a property that should never be satisfied (<b>AVOID</b>)">
-                  <option hidden disabled selected value="">Goal type</option>
-                  <option value="ACHIEVE">ACHIEVE</option>
-                  <option value="AVOID">AVOID</option>
+                    <option hidden disabled selected value="">Goal type</option>
+                    <option value="ACHIEVE">ACHIEVE</option>
+                    <option value="AVOID">AVOID</option>
                 </select>
             </div>
             {% if goal_with_outputs is defined %}
@@ -83,7 +83,7 @@
             <tbody>
             {% for idx, row in outputs.iterrows() %} <!-- outputs -->
             <tr>
-                <td data-name="type" class="type">{{ row['goal_type'] }}</td>
+                <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
                 <td>
                     {% for t in row['entailed_triple'] %}
                     <div class="form-check">
@@ -121,7 +121,7 @@
         <tbody>
         {% for idx, row in outputs.iterrows() %} <!-- outputs -->
         <tr>
-            <td data-name="type" class="type">{{ row['goal_type'] }}</td>
+            <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
             <td>
                 {% for t in row['entailed_triple'] %}
                 <div class="form-check">

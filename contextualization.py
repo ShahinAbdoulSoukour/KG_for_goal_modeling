@@ -317,10 +317,10 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             triples_already_processed.extend(triples_to_process)
 
         if triples_to_process_grouped:
-            for triples, goal_type in triples_to_process_grouped:
+            for triples, gt in triples_to_process_grouped:
                 processed_data.append({
                     "ENTAILED_TRIPLE": triples,
-                    "GOAL_TYPE": goal_type
+                    "GOAL_TYPE": gt
                 })
 
         # Create DataFrame from the list of dictionaries
@@ -332,10 +332,9 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             db.add(new_goal)
             db.commit()
 
-            # Add the entailed triples and the generated text in the database (table: outputs)
+            # Add the entailed triples and the goal type in the database (table: outputs)
             for row in processed_data_df.itertuples():
-                new_results = models.Outputs(goal_type=row.GOAL_TYPE,
-                                             goal_id=new_goal.id)
+                new_results = models.Outputs(goal_type=row.GOAL_TYPE, goal_id=new_goal.id)
                 new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                 db.add(new_results)
             db.commit()
