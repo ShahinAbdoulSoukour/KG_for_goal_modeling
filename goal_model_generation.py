@@ -41,28 +41,32 @@ def process_goal_hierarchy(db: Session):
     # Fetch all hierarchies
     hierarchies = db.query(models.Hierarchy).all()
 
+    # Map of goal id to goal object
+    goal_map = {goal.id: goal for goal in all_goals}
+
     # Process and map the goals with their hierarchies
     hierarchy_data = []
 
-    for goal in all_goals:
-        for hierarchy in hierarchies:
-            if hierarchy.subgoal_id == goal.id or hierarchy.high_level_goal_id == goal.id:
-                hierarchy_data.append({
-                    'subgoal_id': hierarchy.subgoal_id,
-                    'subgoal_name': db.query(models.Goal).filter(models.Goal.id == hierarchy.subgoal_id).first().goal_name,
-                    'subgoal_goal_type': db.query(models.Goal).filter(models.Goal.id == hierarchy.subgoal_id).first().goal_type,
-                    'high_level_goal_id': hierarchy.high_level_goal_id,
-                    'high_level_goal_name': db.query(models.Goal).filter(
-                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_name,
-                    'high_level_goal_goal_type': db.query(models.Goal).filter(
-                        models.Goal.id == hierarchy.high_level_goal_id).first().goal_type,
-                    'refinement': hierarchy.refinement
-                })
+    for hierarchy in hierarchies:
+        subgoal = goal_map[hierarchy.subgoal_id]
+        high_level_goal = goal_map.get(hierarchy.high_level_goal_id)  # Can be None
+
+        hierarchy_data.append({
+            'hierarchy_id': hierarchy.id,
+            'subgoal_id': subgoal.id,
+            'subgoal_name': subgoal.goal_name,
+            'subgoal_goal_type': subgoal.goal_type,
+            'high_level_goal_id': high_level_goal.id if high_level_goal else None,
+            'high_level_goal_name': high_level_goal.goal_name if high_level_goal else None,
+            'high_level_goal_goal_type': high_level_goal.goal_type if high_level_goal else None,
+            'refinement': hierarchy.refinement
+        })
 
     # Add single goals with no hierarchy
     for goal in all_goals:
         if not any(goal.id == h['subgoal_id'] or goal.id == h['high_level_goal_id'] for h in hierarchy_data):
             hierarchy_data.append({
+                'hierarchy_id': None,
                 'subgoal_id': goal.id,
                 'subgoal_name': goal.goal_name,
                 'subgoal_goal_type': goal.goal_type,
