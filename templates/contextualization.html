@@ -57,7 +57,7 @@
             </datalist>
             <!-- Submit button -->
             <div class="input-group-append">
-                <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
+                <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
             </div>
             {%if hlg_id is defined%}
             <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
@@ -65,7 +65,7 @@
             <input type="hidden" name="hlg_id" value="-1">
             {%endif%}
         </div>
-        <br>
+        <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
 
         {% if not goal_with_outputs %} <!-- -->
 
@@ -76,8 +76,8 @@
         <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
             <thead>
             <tr>
-                <th>Type</th>
-                <th>Information extracted</th>
+                <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
+                <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
             </tr>
             </thead>
             <tbody>
@@ -114,8 +114,8 @@
     <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
         <thead>
         <tr>
-            <th>Type</th>
-            <th>Information extracted</th>
+            <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
+            <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
         </tr>
         </thead>
         <tbody>
@@ -144,14 +144,12 @@
 
 {% block scripts %}
 <script>
-
     $(document).ready( function () {
         $('#createGoalNav a').addClass('active')
         $('[data-toggle="tooltip"]').tooltip({"html": true, "placement": "bottom", "trigger": "hover"})
         $('[data-toggle="tooltip"]').click(function() {
             $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
         })
-
         $('#data_triples').DataTable();
 
         $("select").on("change", function() {
@@ -159,13 +157,11 @@
             $(this).css("background-color", "#ffffff")
             $(this).css("color", "#172b4d")
         })
-
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
-
         $("#okBtn").click(function() {
-            if ($("#input-datalist").val() && $("#goal_type").val()) {
+            if ($("#input-datalist").val() && $("#goal_type").val() && ($("#refinement").val() || !$("#refinement").length)) {
                 $(this).prop("disabled", true);
                 $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
 
@@ -176,7 +172,6 @@
 
                 $("#myForm").submit();
             } else {
-                //$("#input-datalist").css("background-color", "#ffda69");
                 if (!$("#input-datalist").val()) {
                     $("#input-datalist").removeClass("text-black-50 bg-light")
                     $("#input-datalist").css("background-color", "#ffda69");
@@ -184,6 +179,10 @@
                 if (!$("#goal_type").val()) {
                     $("#goal_type").removeClass("text-black-50 bg-light")
                     $("#goal_type").css("background-color", "#ffda69")
+                }
+                if (!$("#refinement").val() && $("#refinement").length) {
+                    $("#refinement").removeClass("text-black-50 bg-light")
+                    $("#refinement").css("background-color", "#ffda69")
                 }
             }
         });
