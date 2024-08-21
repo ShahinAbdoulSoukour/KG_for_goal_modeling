@@ -47,14 +47,19 @@ async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: s
     # Query to get all subgoals for a specific high-level goal
     subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(models.Hierarchy.high_level_goal_id == hlg_id).all()
 
+    if len(subgoals):
+        subgoal = subgoals[0]
+        refinement = db.query(models.Hierarchy).filter_by(high_level_goal_id=hlg_id, subgoal_id=subgoal.id).first().refinement
+    else:
+        refinement = "AND"
     # Insert new middle goal (with AND refinements by default)
     # New hierarchy between the existing high-level goal and new middle goal
-    new_hierarchy_high = models.Hierarchy(refinement="AND", high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
+    new_hierarchy_high = models.Hierarchy(refinement=refinement, high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
     db.add(new_hierarchy_high)
 
     for subgoal in subgoals:
         # New hierarchy between new middle goal and the existing subgoals
-        new_hierarchy_sub = models.Hierarchy(refinement="AND", high_level_goal_id=new_middle_goal.id, subgoal_id=subgoal.id)
+        new_hierarchy_sub = models.Hierarchy(refinement=refinement, high_level_goal_id=new_middle_goal.id, subgoal_id=subgoal.id)
         db.add(new_hierarchy_sub)
 
         # Delete old hierarchy
