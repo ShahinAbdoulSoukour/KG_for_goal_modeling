@@ -5,6 +5,34 @@
 {% block content %}
 <br>
 
+<!--<div class="modal" tabindex="-1" role="dialog">-->
+<!--  <div class="modal-dialog" role="document">-->
+<!--    <div class="modal-content">-->
+<!--      <div class="modal-header">-->
+<!--        <h5 class="modal-title">Change the refinement link</h5>-->
+<!--        <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+<!--          <span aria-hidden="true">&times;</span>-->
+<!--        </button>-->
+<!--      </div>-->
+<!--      <form >-->
+<!--        <div class="modal-body">-->
+<!--          <select id="refinement" class="form-select text-black-50 bg-light" name="refinement" aria-label="refinement_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal: <ul><li>should be satisfied additionally to its sibling goals (<b>AND</b> refinement)</li><li>is among a set of goals of which at least one should be satisfied (<b>OR</b> refinement)</li><li>is among a set of goals of which exactly one should be satisfied (<b>XOR</b> refinement)</li></ul>... to fulfill its parent.<br><br>If you do not plan to add siblings to your goal, use the <b>AND</b> refinement.">-->
+<!--            <option hidden disabled selected value="">Refinement</option>-->
+<!--            <option value="AND">AND</option>-->
+<!--            <option value="OR">OR</option>-->
+<!--            <option value="XOR">XOR</option>-->
+<!--          </select>-->
+<!--          <input type="hidden" name="hlg_id" value="-1">-->
+<!--        </div>-->
+<!--        <div class="modal-footer">-->
+<!--          <button type="button" class="btn btn-primary">Save changes</button>-->
+<!--          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+<!--        </div>-->
+<!--      </form>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</div>-->
+
 {% if hierarchy_data %}
     <!-- Display the goal model -->
     <div id="goal_model_div"></div>
@@ -95,7 +123,22 @@
                         {
                             'v': refinementNode,
                             'f': '<div class="refinement-node" style="background-color: #e0e0e0;">' +
-                                  '<a href="/middle_goal/' + highLevelGoalId + '">' + item.refinement + '</a>' +
+                                  item.refinement +
+                                  // '<span style="white-space: nowrap;">' +
+                                  // '<button type="button" class="btn btn-outline-warning" data-refinement-id=" data-toggle="tooltip" data-placement="bottom" title="Change refinement link">' +
+                                  // '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">' +
+                                  // '<path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>' +
+                                  // '<path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>' +
+                                  // '</svg>' +
+                                  // '</button>' +
+                                  // '</span>'+
+                                  '<span style="white-space: nowrap;">' +
+                                  '<a type="button" class="btn btn-outline-success" href="/middle_goal/' + highLevelGoalId + '" data-toggle="tooltip" data-placement="bottom" title="Add intermediary goal">' +
+                                  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">' +
+                                  '<path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>' +
+                                  '</svg>' +
+                                  '</a>' +
+                                  '</span>'+
                                   '</div>'
                         },
                         highLevelGoalContent,
@@ -140,5 +183,12 @@
         var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
         chart.draw(data, { 'allowHtml': true });
     }
+
+    $(document).ready( function () {
+        $('[data-toggle="tooltip"]').tooltip({"html": true, "placement": "bottom", "trigger": "hover"})
+        $('[data-toggle="tooltip"]').click(function() {
+            $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
+        })
+    })
 </script>
 {% endblock %}

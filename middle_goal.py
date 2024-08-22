@@ -28,8 +28,15 @@ models.Base.metadata.create_all(bind=engine)
 
 
 @router.get("/middle_goal/{high_level_goal_id}")
-async def middle_goal(request: Request, high_level_goal_id: int):
-    return templates.TemplateResponse('middle_goal.html', context={'request': request, 'hlg_id': high_level_goal_id})
+async def middle_goal(request: Request, high_level_goal_id: int, db: Session = Depends(get_db)):
+    goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == high_level_goal_id).first()
+
+    if not goal_with_outputs:
+        return RedirectResponse("/")
+
+    highlevelgoal = goal_with_outputs.goal_name
+
+    return templates.TemplateResponse('middle_goal.html', context={'request': request, 'hlg_id': high_level_goal_id, 'highlevelgoal': highlevelgoal})
 
 
 @router.post("/middle_goal")
@@ -70,7 +77,4 @@ async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: s
         db.commit()
         print("commited")
 
-    return templates.TemplateResponse('middle_goal.html', context={
-        'request': request,
-        'hlg_id': hlg_id,
-    })
+    return RedirectResponse(f"/goal_model_generation", status_code=302)

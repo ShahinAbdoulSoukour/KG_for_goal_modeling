@@ -3,69 +3,85 @@
 {% block title %} Middle goal creation {% endblock %}
 
 {% block content %}
+
 <br>
-<!-- Tabs navs -->
-<ul class="nav nav-tabs nav-justified mb-3" id="ex1" role="tablist">
-  <li class="nav-item" role="presentation">
-    <a data-mdb-tab-init class="nav-link active" id="ex3-tab-1" href="#ex3-tabs-1" role="tab" aria-controls="ex3-tabs-1" aria-selected="true">
-        Update the refinement link
-    </a>
-  </li>
-  <li class="nav-item" role="presentation">
-    <a data-mdb-tab-init class="nav-link" id="ex3-tab-2" href="#ex3-tabs-2" role="tab" aria-controls="ex3-tabs-2" aria-selected="false">
-        Add a goal
-    </a>
-  </li>
-</ul>
-<!-- Tabs navs -->
 
-<!-- Tabs content -->
-<div class="tab-content" id="ex2-content">
-
-  <div class="tab-pane fade show active" id="ex3-tabs-1" role="tabpanel" aria-labelledby="ex3-tab-1">
-    Tab 1 content
-  </div>
-
-  <div class="tab-pane fade" id="ex3-tabs-2" role="tabpanel" aria-labelledby="ex3-tab-2">
-    <div class="d-flex justify-content-center align-items-center container ">
-        <form id="myForm" action="/middle_goal" method="POST" enctype="multipart/form-data" style="width: 22rem;" class="justify-content-center">
-            <div class="form-group">
+<div class="justify-content-center align-items-center container ">
+    <form id="myForm" action="/middle_goal" method="POST" enctype="multipart/form-data" class="justify-content-center">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <!-- Goal type -->
                 <select id="goal_type" class="form-select text-black-50 bg-light" name="goal_type" aria-label="goal_type_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal will express a property that a system should satisfy (<b>ACHIEVE</b>) or a property that should never be satisfied (<b>AVOID</b>)">
-                  <option hidden disabled selected value="">Goal type</option>
-                  <option value="ACHIEVE">ACHIEVE</option>
-                  <option value="AVOID">AVOID</option>
+                    <option hidden disabled selected value="">Goal type</option>
+                    <option value="ACHIEVE">ACHIEVE</option>
+                    <option value="AVOID">AVOID</option>
                 </select>
             </div>
-            <div class="form-group">
-                <input type="text" class="form-control" placeholder="Enter the goal" name="goal_name" id="input-datalist" list="list-goal" required>
-            </div>
+            <!-- Input - High-level goal -->
+            <input type="text" class="form-control" placeholder="Enter the goal" name="goal_name" id="input-datalist" list="list-goal" required>
+            <datalist id="list-goal">
+                {% for g in all_goal %}
+                    <option value="{{ g.goal_name }}"></option>
+                {% endfor %}
+            </datalist>
             <!-- Submit button -->
-            <div class="form-group">
-                <div class="input-group-append">
-                    <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
-                </div>
+            <div class="input-group-append">
+                <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
             </div>
-            {% if hlg_id is defined %}
-            <input type="text" name="hlg_id" value="{{ hlg_id }}">
-            {% else %}
-            <input type="text" name="hlg_id" value="-1">
-            {% endif %}
-        </form>
-    </div>
-  </div>
+            {%if hlg_id is defined%}
+            <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
+            {%else%}
+            <input type="hidden" name="hlg_id" value="-1">
+            {%endif%}
+        </div>
+        <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
+    </form>
 
+    <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
 </div>
-<!-- Tabs content -->
-
-
 
 {% endblock %}
 
 {% block scripts %}
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.umd.min.js">
-    // Initialization for ES Users
-    import { Tab, initMDB } from "mdb-ui-kit";
+<script>
+    $(document).ready( function () {
+        $('#createGoalNav a').addClass('active')
+        $('[data-toggle="tooltip"]').tooltip({"html": true, "placement": "bottom", "trigger": "hover"})
+        $('[data-toggle="tooltip"]').click(function() {
+            $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
+        })
+        $('#data_triples').DataTable();
 
-    initMDB({ Tab });
-    </script>
+        $("select").on("change", function() {
+            $(this).removeClass("text-black-50 bg-light")
+            $(this).css("background-color", "#ffffff")
+            $(this).css("color", "#172b4d")
+        })
+        $("#input-datalist").on("input", function() {
+            $(this).css("background-color", "#ffffff")
+        })
+        $("#okBtn").click(function() {
+            if ($("#input-datalist").val() && $("#goal_type").val()) {
+                $(this).prop("disabled", true);
+                $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
+
+                $("#loadingModal").modal({
+                    "backdrop": "static",
+                    "keyboard": false
+                }).modal("show");
+
+                $("#myForm").submit();
+            } else {
+                if (!$("#input-datalist").val()) {
+                    $("#input-datalist").removeClass("text-black-50 bg-light")
+                    $("#input-datalist").css("background-color", "#ffda69");
+                }
+                if (!$("#goal_type").val()) {
+                    $("#goal_type").removeClass("text-black-50 bg-light")
+                    $("#goal_type").css("background-color", "#ffda69")
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
