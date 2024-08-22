@@ -8,33 +8,39 @@
 
 <div class="justify-content-center align-items-center container ">
     <form id="myForm" action="/middle_goal" method="POST" enctype="multipart/form-data" class="justify-content-center">
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <!-- Goal type -->
-                <select id="goal_type" class="form-select text-black-50 bg-light" name="goal_type" aria-label="goal_type_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal will express a property that a system should satisfy (<b>ACHIEVE</b>) or a property that should never be satisfied (<b>AVOID</b>)">
-                    <option hidden disabled selected value="">Goal type</option>
-                    <option value="ACHIEVE">ACHIEVE</option>
-                    <option value="AVOID">AVOID</option>
-                </select>
-            </div>
-            <!-- Input - High-level goal -->
-            <input type="text" class="form-control" placeholder="Enter the goal" name="goal_name" id="input-datalist" list="list-goal" required>
-            <datalist id="list-goal">
-                {% for g in all_goal %}
-                    <option value="{{ g.goal_name }}"></option>
-                {% endfor %}
-            </datalist>
-            <!-- Submit button -->
-            <div class="input-group-append">
-                <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
-            </div>
-            {%if hlg_id is defined%}
-            <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
-            {%else%}
-            <input type="hidden" name="hlg_id" value="-1">
-            {%endif%}
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <!-- Goal type -->
+            <select id="goal_type" class="form-select text-black-50 bg-light" name="goal_type" aria-label="goal_type_selection" data-toggle="tooltip" data-placement="bottom" title="Whether your subgoal will express a property that a system should satisfy (<b>ACHIEVE</b>) or a property that should never be satisfied (<b>AVOID</b>)">
+                <option hidden disabled selected value="">Goal type</option>
+                <option value="ACHIEVE">ACHIEVE</option>
+                <option value="AVOID">AVOID</option>
+            </select>
         </div>
-        <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
+        <!-- Input - High-level goal -->
+        <input type="text" class="form-control" placeholder="Enter the goal" name="goal_name" id="input-datalist" list="list-goal" required>
+        <datalist id="list-goal">
+            {% for g in all_goal %}
+                <option value="{{ g.goal_name }}"></option>
+            {% endfor %}
+        </datalist>
+        <!-- Refinement type -->
+        <select id="refinement_type" class="form-select text-black-50 bg-light" name="refinement_type" aria-label="refinement_type_selection" required>
+            <option hidden disabled selected value="">Refinement type</option>
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+        </select>
+        <!-- Submit button -->
+        <div class="input-group-append">
+            <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
+        </div>
+        {% if hlg_id is defined %}
+        <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
+        {% else %}
+        <input type="hidden" name="hlg_id" value="-1">
+        {% endif %}
+    </div>
+    <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
     </form>
 
     <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
