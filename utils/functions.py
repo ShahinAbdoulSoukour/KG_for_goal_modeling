@@ -140,7 +140,7 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
     response = requests.post(API_URL, headers=headers, json=data)
 
     if response.status_code < 200 or response.status_code > 399:
-        if test_again < 10:
+        if test_again < 20:
             time.sleep(5)
             return detect_entailment_api(premise, hypothesis, model_name, max_length=max_length, full_results=full_results, test_again=test_again+1)
         else:
@@ -201,7 +201,7 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0)
     response = requests.post(API_URL, headers=headers, json=data)
 
     if response.status_code < 200 or response.status_code > 399:
-        if test_again < 10:
+        if test_again < 20:
             time.sleep(5)
             return triple_sentiment_analysis_api(triple, neutral_predicates=neutral_predicates, test_again=test_again+1)
         else:
