@@ -45,11 +45,13 @@ async def middle_goal(request: Request, high_level_goal_id: int, refinement_type
 async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: str = Form(...), hlg_id: int = Form(...),
                       refinement_type: str = Form(...), db: Session = Depends(get_db)):
     # Create the new middle goal
-    if hlg_id != -1:
-        new_middle_goal = models.Goal(goal_type=goal_type, goal_name=goal_name)
-        db.add(new_middle_goal)
-        db.commit()
-        db.refresh(new_middle_goal)
+    if hlg_id == -1:
+        RedirectResponse(f"/goal_model_generation", status_code=302)
+
+    new_middle_goal = models.Goal(goal_type=goal_type, goal_name=goal_name)
+    db.add(new_middle_goal)
+    db.commit()
+    db.refresh(new_middle_goal)
 
     # Get all current subgoals linked to the high-level goal
     subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(
