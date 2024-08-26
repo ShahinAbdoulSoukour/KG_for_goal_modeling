@@ -24,16 +24,15 @@
                 <option value="{{ g.goal_name }}"></option>
             {% endfor %}
         </datalist>
-        <!-- Refinement type -->
-        <select id="refinement_type" class="form-select text-black-50 bg-light" name="refinement_type" aria-label="refinement_type_selection" required>
-            <option hidden disabled selected value="">Refinement type</option>
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-        </select>
         <!-- Submit button -->
         <div class="input-group-append">
             <button type="button" class="btn btn-primary rounded-right" id="okBtn">OK</button>
         </div>
+        {% if refinement_type is defined %}
+        <input type="hidden" name="refinement_type" value="{{ refinement_type }}">
+        {% else %}
+        <input type="hidden" name="refinement_type" value="AND">
+        {% endif %}
         {% if hlg_id is defined %}
         <input type="hidden" name="hlg_id" value="{{ hlg_id }}">
         {% else %}

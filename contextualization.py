@@ -32,27 +32,27 @@ logging.set_verbosity_error()
 
 
 # --- Initialize inference servers
-API_URL_sent = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
-API_URL_nli = "https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
-API_TOKEN = "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"
-headers = {
-    "Accept": "application/json",
-    "Authorization": f"Bearer {API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-data_sent = {
-    'inputs': {
-        'text': '',
-        'text_pair': ''
-    }
-}
-data_nli = {
-    "inputs": " "
-}
-
-requests.post(API_URL_nli, headers=headers, json=data_nli)
-requests.post(API_URL_sent, headers=headers, json=data_sent)
+# API_URL_sent = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
+# API_URL_nli = "https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
+# API_TOKEN = "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"
+# headers = {
+#     "Accept": "application/json",
+#     "Authorization": f"Bearer {API_TOKEN}",
+#     "Content-Type": "application/json"
+# }
+#
+# data_sent = {
+#     'inputs': {
+#         'text': '',
+#         'text_pair': ''
+#     }
+# }
+# data_nli = {
+#     "inputs": " "
+# }
+#
+# requests.post(API_URL_nli, headers=headers, json=data_nli)
+# requests.post(API_URL_sent, headers=headers, json=data_sent)
 
 # --- Import models ---
 model_sts = SentenceTransformer('all-mpnet-base-v2')
