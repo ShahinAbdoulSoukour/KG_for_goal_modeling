@@ -7,6 +7,7 @@
 <br>
 
 <div class="justify-content-center align-items-center container ">
+    <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
     <form id="myForm" action="/middle_goal" method="POST" enctype="multipart/form-data" class="justify-content-center">
     <div class="input-group mb-3">
         <div class="input-group-prepend">
@@ -41,8 +42,6 @@
     </div>
     <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
     </form>
-
-    <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
 </div>
 
 {% endblock %}
