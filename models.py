@@ -21,7 +21,7 @@ class Goal(Base):
     __tablename__ = "goal"
 
     id = Column(Integer, primary_key=True)
-    goal_type = Column(String(100))
+    goal_type = Column(String(10))
     goal_name = Column(String(100))
 
     outputs = relationship("Outputs", back_populates="goal", cascade="all, delete-orphan") # one-to-many relationship`
@@ -41,7 +41,8 @@ class Outputs(Base):
     __tablename__ = "outputs"
 
     id = Column(Integer, primary_key=True)
-    goal_type = Column(String(100))
+    generated_text = Column(String(255))
+    goal_type = Column(String(10))
     entailed_triple = Column(String(100))
     goal_id = Column(Integer, ForeignKey('goal.id'))
 

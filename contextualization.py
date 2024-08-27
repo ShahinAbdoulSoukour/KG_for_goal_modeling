@@ -22,7 +22,7 @@ from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import test_entailment_api, triple_sentiment_analysis_api
 from graph_explorator import graph_explorator
-#from g2t_generator import g2t_generator
+from g2t_generator import g2t_generator
 from graph_extender import graph_extender
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -32,35 +32,35 @@ logging.set_verbosity_error()
 
 
 # --- Initialize inference servers
-# API_URL_sent = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
-# API_URL_nli = "https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
-# API_TOKEN = "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"
-# headers = {
-#     "Accept": "application/json",
-#     "Authorization": f"Bearer {API_TOKEN}",
-#     "Content-Type": "application/json"
-# }
-#
-# data_sent = {
-#     'inputs': {
-#         'text': '',
-#         'text_pair': ''
-#     }
-# }
-# data_nli = {
-#     "inputs": " "
-# }
-#
-# requests.post(API_URL_nli, headers=headers, json=data_nli)
-# requests.post(API_URL_sent, headers=headers, json=data_sent)
+API_URL_sent = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
+API_URL_nli = "https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
+API_TOKEN = "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"
+headers = {
+    "Accept": "application/json",
+    "Authorization": f"Bearer {API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+data_sent = {
+    'inputs': {
+        'text': '',
+        'text_pair': ''
+    }
+}
+data_nli = {
+    "inputs": " "
+}
+
+requests.post(API_URL_nli, headers=headers, json=data_nli)
+requests.post(API_URL_sent, headers=headers, json=data_sent)
 
 # --- Import models ---
 model_sts = SentenceTransformer('all-mpnet-base-v2')
 
 model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
 
-#model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
-#tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
+model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
+tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 
 
 # --- Import the Knowledge Graph (KG) ---
@@ -150,7 +150,8 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
         data.append({
             'id': output.id,
             'goal_id': output.goal_id,
-            'goal_type': output.goal_type, #
+            'goal_type': output.goal_type,
+            'generated_text': output.generated_text,
             'entailed_triple': output.get_entailed_triples()
         })
 
@@ -341,10 +342,14 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             triples_already_processed.extend(triples_to_process)
 
         if triples_to_process_grouped:
-            for triples, gt in triples_to_process_grouped:
+            predictions = g2t_generator([tripls_grp for tripls_grp, _ in triples_to_process_grouped], model=model_g2t, tokenizer=tokenizer_g2t)
+            for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
+                prediction = f"[{gt}] " + prediction
+
                 processed_data.append({
                     "ENTAILED_TRIPLE": triples,
-                    "GOAL_TYPE": gt
+                    "GOAL_TYPE": gt,
+                    "GENERATED_TEXT": prediction
                 })
 
         # Create DataFrame from the list of dictionaries
@@ -358,7 +363,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
 
             # Add the entailed triples and the goal type in the database (table: outputs)
             for row in processed_data_df.itertuples():
-                new_results = models.Outputs(goal_type=row.GOAL_TYPE, goal_id=new_goal.id)
+                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_type=row.GOAL_TYPE, goal_id=new_goal.id)
                 new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                 db.add(new_results)
             db.commit()
@@ -394,6 +399,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                     'id': output.id,
                     'goal_id': output.goal_id,
                     'goal_type': output.goal_type,
+                    'generated_text': output.generated_text,
                     'entailed_triple': output.get_entailed_triples()
                 })
 
