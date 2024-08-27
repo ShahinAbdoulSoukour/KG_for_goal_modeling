@@ -38,37 +38,51 @@ async def middle_goal(request: Request, high_level_goal_id: int, refinement_type
 
     highlevelgoal = goal_with_outputs.goal_name
 
-    return templates.TemplateResponse('middle_goal.html', context={'request': request, 'hlg_id': high_level_goal_id, 'refinement_type': refinement_type, 'highlevelgoal': highlevelgoal})
+    # Get all current subgoals linked to the high-level goal
+    subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(
+        models.Hierarchy.high_level_goal_id == high_level_goal_id,
+        models.Hierarchy.refinement == refinement_type
+    ).all()
+
+    return templates.TemplateResponse('middle_goal.html', context={
+        'request': request,
+        'hlg_id': high_level_goal_id,
+        'refinement_type': refinement_type,
+        'highlevelgoal': highlevelgoal,
+        'subgoals': subgoals  # Pass the subgoals to the template
+    })
 
 
 @router.post("/middle_goal")
 async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: str = Form(...), hlg_id: int = Form(...),
-                      refinement_type: str = Form(...), db: Session = Depends(get_db)):
+                      refinement_type: str = Form(...), subgoal_id: List[str] = Form([]), db: Session = Depends(get_db)):
     # Create the new middle goal
     if hlg_id == -1:
-        RedirectResponse(f"/goal_model_generation", status_code=302)
+        return RedirectResponse(f"/goal_model_generation", status_code=302)
 
     new_middle_goal = models.Goal(goal_type=goal_type, goal_name=goal_name)
     db.add(new_middle_goal)
     db.commit()
     db.refresh(new_middle_goal)
 
-    # Get all current subgoals linked to the high-level goal
-    subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(
-        models.Hierarchy.high_level_goal_id == hlg_id, models.Hierarchy.refinement == refinement_type).all()
+    # If a subgoal is provided, link the mid-goal between the high-level goal and the subgoal
+    for sg in subgoal_id:
+        # --> Update the goal hierarchy <--
+        # Break the current hierarchy between the high-level goal and the subgoal
+        old_hierarchy = db.query(models.Hierarchy).filter(
+            models.Hierarchy.high_level_goal_id == hlg_id,
+            models.Hierarchy.subgoal_id == sg,
+            models.Hierarchy.refinement == refinement_type
+        ).first()
+        if old_hierarchy:
+            db.delete(old_hierarchy)
 
-    # --> Update the goal hierarchy <--
-    # Break the current hierarchy between the high-level goal and subgoals
-    new_hierarchy_hlg = models.Hierarchy(refinement=refinement_type, high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
-    db.add(new_hierarchy_hlg)
+        # Create new links: high-level goal -> mid-goal and mid-goal -> subgoal
+        new_hierarchy_hlg = models.Hierarchy(refinement=refinement_type, high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
+        db.add(new_hierarchy_hlg)
 
-    for subgoal in subgoals:
-        new_hierarchy_sub = models.Hierarchy(refinement=refinement_type, high_level_goal_id=new_middle_goal.id, subgoal_id=subgoal.id)
+        new_hierarchy_sub = models.Hierarchy(refinement=refinement_type, high_level_goal_id=new_middle_goal.id, subgoal_id=sg)
         db.add(new_hierarchy_sub)
-
-        # Delete the old hierarchy links
-        old_hierarchy = db.query(models.Hierarchy).filter(models.Hierarchy.high_level_goal_id == hlg_id, models.Hierarchy.subgoal_id == subgoal.id).first()
-        db.delete(old_hierarchy)
 
     db.commit()
 
