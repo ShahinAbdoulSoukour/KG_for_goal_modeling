@@ -44,6 +44,10 @@
         </div>
     </div>
 
+    {% if highlevelgoal is defined %}
+    <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
+    {% endif %}
+
     <!-- Form -->
     <form id="myForm" action="/" method="POST" enctype="multipart/form-data">
         <div class="input-group mb-3">
@@ -88,7 +92,6 @@
         {% if not goal_with_outputs %} <!-- -->
 
         {% if unique_triples_entailed is defined %}
-        <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
         <br>
         <!-- Entailed triples -->
         <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
@@ -118,7 +121,6 @@
     </form>
     {% else %}
         {% if message is defined %}
-        <p><u>High-level goal</u>: {{ highlevelgoal }}</p>
         <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
             No entailed triples has been identified!
         </div>
@@ -126,7 +128,6 @@
     {% endif %}
 
     {% else %}
-    <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
     <br>
     <!-- Entailed triples -->
     <table id="data_triples" class="table table-bordered table-striped" style="width:100%">

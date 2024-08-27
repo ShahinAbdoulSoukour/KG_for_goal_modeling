@@ -16,6 +16,7 @@ templates = Jinja2Templates(directory="templates/")
 # Router
 router = APIRouter()
 
+
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -24,11 +25,12 @@ def get_db():
     finally:
         db.close()
 
+
 models.Base.metadata.create_all(bind=engine)
 
 
 @router.get("/middle_goal/{high_level_goal_id}")
-async def middle_goal(request: Request, high_level_goal_id: int, db: Session = Depends(get_db)):
+async def middle_goal(request: Request, high_level_goal_id: int, refinement_type: str = "AND",  db: Session = Depends(get_db)):
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == high_level_goal_id).first()
 
     if not goal_with_outputs:
@@ -36,45 +38,38 @@ async def middle_goal(request: Request, high_level_goal_id: int, db: Session = D
 
     highlevelgoal = goal_with_outputs.goal_name
 
-    return templates.TemplateResponse('middle_goal.html', context={'request': request, 'hlg_id': high_level_goal_id, 'highlevelgoal': highlevelgoal})
+    return templates.TemplateResponse('middle_goal.html', context={'request': request, 'hlg_id': high_level_goal_id, 'refinement_type': refinement_type, 'highlevelgoal': highlevelgoal})
 
 
 @router.post("/middle_goal")
-async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: str = Form(...), hlg_id: int = Form(...), db: Session = Depends(get_db)):
-    # Create a new middle goal
-    if hlg_id != -1:
-        new_middle_goal = models.Goal(goal_type=goal_type, goal_name=goal_name)
-        db.add(new_middle_goal)
-        db.commit()
-        db.refresh(new_middle_goal)
+async def middle_goal(request: Request, goal_name: str = Form(...), goal_type: str = Form(...), hlg_id: int = Form(...),
+                      refinement_type: str = Form(...), db: Session = Depends(get_db)):
+    # Create the new middle goal
+    if hlg_id == -1:
+        RedirectResponse(f"/goal_model_generation", status_code=302)
 
-    # --> Update the hierarchy
+    new_middle_goal = models.Goal(goal_type=goal_type, goal_name=goal_name)
+    db.add(new_middle_goal)
+    db.commit()
+    db.refresh(new_middle_goal)
+
+    # Get all current subgoals linked to the high-level goal
+    subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(
+        models.Hierarchy.high_level_goal_id == hlg_id, models.Hierarchy.refinement == refinement_type).all()
+
+    # --> Update the goal hierarchy <--
     # Break the current hierarchy between the high-level goal and subgoals
-
-    # Query to get all subgoals for a specific high-level goal
-    subgoals = db.query(models.Goal).join(models.Hierarchy, models.Goal.id == models.Hierarchy.subgoal_id).filter(models.Hierarchy.high_level_goal_id == hlg_id).all()
-
-    if len(subgoals):
-        subgoal = subgoals[0]
-        refinement = db.query(models.Hierarchy).filter_by(high_level_goal_id=hlg_id, subgoal_id=subgoal.id).first().refinement
-    else:
-        refinement = "AND"
-    # Insert new middle goal (with AND refinements by default)
-    # New hierarchy between the existing high-level goal and new middle goal
-    new_hierarchy_high = models.Hierarchy(refinement=refinement, high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
-    db.add(new_hierarchy_high)
+    new_hierarchy_hlg = models.Hierarchy(refinement=refinement_type, high_level_goal_id=hlg_id, subgoal_id=new_middle_goal.id)
+    db.add(new_hierarchy_hlg)
 
     for subgoal in subgoals:
-        # New hierarchy between new middle goal and the existing subgoals
-        new_hierarchy_sub = models.Hierarchy(refinement=refinement, high_level_goal_id=new_middle_goal.id, subgoal_id=subgoal.id)
+        new_hierarchy_sub = models.Hierarchy(refinement=refinement_type, high_level_goal_id=new_middle_goal.id, subgoal_id=subgoal.id)
         db.add(new_hierarchy_sub)
 
-        # Delete old hierarchy
+        # Delete the old hierarchy links
         old_hierarchy = db.query(models.Hierarchy).filter(models.Hierarchy.high_level_goal_id == hlg_id, models.Hierarchy.subgoal_id == subgoal.id).first()
         db.delete(old_hierarchy)
-        print("Old hierarchy deleted")
 
-        db.commit()
-        print("commited")
+    db.commit()
 
     return RedirectResponse(f"/goal_model_generation", status_code=302)
