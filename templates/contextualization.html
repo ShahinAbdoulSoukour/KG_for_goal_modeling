@@ -71,7 +71,7 @@
             </div>
             {% endif %}
             <!-- Input - High-level goal -->
-            <input type="text" class="form-control" placeholder="Enter the high-level goal" name="highlevelgoal" id="input-datalist" list="list-goal" required>
+            <input type="text" class="form-control" placeholder="{% if highlevelgoal is defined %}Enter the subgoal{% else %}Enter the high-level goal{% endif %}" name="highlevelgoal" id="input-datalist" list="list-goal" required>
             <datalist id="list-goal">
                 {% for g in all_goal %}
                     <option value="{{ g.goal_name }}"></option>
