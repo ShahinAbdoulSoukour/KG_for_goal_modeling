@@ -14,3 +14,4 @@ torch~=2.3.0
 numpy~=1.26.4
 starlette~=0.37.2
 requests~=2.32.3
+python-dotenv~=1.0.1

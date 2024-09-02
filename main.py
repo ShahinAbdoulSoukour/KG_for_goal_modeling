@@ -3,6 +3,9 @@ from fastapi import FastAPI
 import contextualization
 import goal_model_generation
 import middle_goal
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="Knowledge Graph for Goal Model Generation")
 

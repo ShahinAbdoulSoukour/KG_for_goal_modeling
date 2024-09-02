@@ -10,6 +10,7 @@ from starlette.responses import RedirectResponse
 
 from database import SessionLocal, engine
 import models
+from dotenv import load_dotenv
 
 import os
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
@@ -30,11 +31,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 logging.set_verbosity_error()
 
-
+load_dotenv()
 # --- Initialize inference servers
-API_URL_sent = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
-API_URL_nli = "https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
-API_TOKEN = "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"
+API_URL_sent = os.environ["API_URL_SENT"]
+API_URL_nli = os.environ["API_URL_NLI"]
+API_TOKEN = os.environ["HF_TOKEN"]
 headers = {
     "Accept": "application/json",
     "Authorization": f"Bearer {API_TOKEN}",

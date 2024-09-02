@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Optional
 
@@ -117,8 +118,8 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
         If `full_results` is True, returns a dict where the keys are the `entailment`, `neutral` and `contradiction`
         labels and values are the certainty scores obtained for each label.
     """
-    API_URL = f"https://rud3d09upk3fg1c2.eu-west-1.aws.endpoints.huggingface.cloud"
-    API_TOKEN = "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"
+    API_URL = os.environ["API_URL_NLI"]
+    API_TOKEN = os.environ["HF_TOKEN"]
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {API_TOKEN}",
@@ -178,8 +179,8 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0)
         tuple[str, float]
             A tuple composed of the most probable sentiment for the triple and its certainty score.
         """
-    API_URL = "https://wgbcsczedwinj5k5.eu-west-1.aws.endpoints.huggingface.cloud"
-    API_TOKEN = "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"
+    API_URL = os.environ["API_URL_SENT"]
+    API_TOKEN = os.environ["HF_TOKEN"]
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {API_TOKEN}",
