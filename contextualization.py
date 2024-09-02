@@ -344,7 +344,6 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         if triples_to_process_grouped:
             predictions = g2t_generator([tripls_grp for tripls_grp, _ in triples_to_process_grouped], model=model_g2t, tokenizer=tokenizer_g2t)
             for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
-                prediction = f"[{gt}] " + prediction
 
                 processed_data.append({
                     "ENTAILED_TRIPLE": triples,
