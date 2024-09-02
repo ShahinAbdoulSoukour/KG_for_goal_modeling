@@ -32,7 +32,7 @@
             <div class="mb-3">
                 <!-- Select multiple subgoals -->
                 <label for="subgoal_id" class="form-label">Select Subgoal(s)</label>
-                <select class="form-control select2 select2-hidden-accessible text-black-50 bg-light" multiple id="subgoal_id" name="subgoal_id" data-placeholder="Select subgoal(s)" style="width: 100%;" tabindex="-1" aria-hidden="true">
+                <select class="form-control select2 select2-hidden-accessible text-black-50 bg-light" required multiple id="subgoal_id" name="subgoal_id" data-placeholder="Select subgoal(s)" style="width: 100%;" tabindex="-1" aria-hidden="true">
                     {% for sg in subgoals %}
                         <option value="{{ sg.id }}">{{ sg.goal_name }}</option>
                     {% endfor %}
@@ -47,7 +47,7 @@
 
         <div class="mb-3 text-center">
             <!-- Submit button -->
-            <button type="submit" class="btn btn-primary" id="okBtn">OK</button>
+            <button type="button" class="btn btn-primary" id="okBtn">OK</button>
         </div>
 
         {% if refinement_type is defined %}
@@ -75,18 +75,21 @@
         $('[data-toggle="tooltip"]').click(function() {
             $('[data-toggle="tooltip"]').tooltip("hide", {"html": true, "placement": "bottom", "trigger": "hover"})
         })
-        $('#data_triples').DataTable();
+        $('#data_triples').DataTable()
 
         $("select").on("change", function() {
             $(this).removeClass("text-black-50 bg-light")
             $(this).css("background-color", "#ffffff")
             $(this).css("color", "#172b4d")
         })
+        $('#subgoal_id').on("change", function() {
+            $('#subgoal_id').siblings(".select2-container").find(".select2-selection").css("background-color", "#ffffff")
+        })
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
         $("#okBtn").click(function() {
-            if ($("#input-datalist").val() && $("#goal_type").val() && $("#subgoal_id").val()) {
+            if ($("#input-datalist").val() && $("#goal_type").val() && $("#subgoal_id").val().length) {
                 $(this).prop("disabled", true);
                 $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
 
@@ -98,16 +101,17 @@
                 $("#myForm").submit();
             } else {
                 if (!$("#input-datalist").val()) {
+                    console.log("a")
                     $("#input-datalist").removeClass("text-black-50 bg-light")
                     $("#input-datalist").css("background-color", "#ffda69");
                 }
                 if (!$("#goal_type").val()) {
+                    console.log("b")
                     $("#goal_type").removeClass("text-black-50 bg-light")
                     $("#goal_type").css("background-color", "#ffda69")
                 }
-                if (!$("#subgoal_id").val()) {
-                    $("#subgoal_id").removeClass("text-black-50 bg-light")
-                    $("#subgoal_id").css("background-color", "#ffda69")
+                if (!$("#subgoal_id").val().length) {
+                    $('#subgoal_id').siblings(".select2-container").find(".select2-selection").css("background-color", "#ffda69");
                 }
             }
         });
