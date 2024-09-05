@@ -39,10 +39,8 @@
                 </select>
             </div>
         {% else %}
-            {% for sg in subgoals %}
-                <!-- Hidden input field for the single subgoal -->
-                <input type="hidden" name="subgoal_id" value="{{ sg.id }}">
-            {% endfor %}
+            <!-- Hidden input field for the single subgoal -->
+            <input type="hidden" id="subgoal_id" name="subgoal_id" value="{{ subgoals[0].id }}">
         {% endif %}
 
         <div class="mb-3 text-center">
