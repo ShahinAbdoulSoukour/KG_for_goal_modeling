@@ -343,7 +343,15 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             triples_already_processed.extend(triples_to_process)
 
         if triples_to_process_grouped:
-            predictions = g2t_generator([tripls_grp for tripls_grp, _ in triples_to_process_grouped], model=model_g2t, tokenizer=tokenizer_g2t)
+            grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
+            if len(grps_of_triples):
+                predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t, tokenizer=tokenizer_g2t)
+                for i in range(len(triples_to_process_grouped)):
+                    if len(triples_to_process_grouped[i][0]) == 1:
+                        predictions.insert(i, "")
+            else:
+                predictions = [""] * len(triples_to_process_grouped)
+
             for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
 
                 processed_data.append({
