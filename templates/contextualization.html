@@ -45,7 +45,7 @@
     </div>
 
     {% if highlevelgoal is defined %}
-    <p><u>High-level goal</u>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
+    <p><b>Parent goal</b>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
     {% endif %}
 
     <!-- Form -->
@@ -124,7 +124,7 @@
     {% else %}
         {% if message is defined %}
         <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-            No entailed triples has been identified!
+            No relevant information has been identified!
         </div>
         {% endif %}
     {% endif %}
