@@ -6,7 +6,8 @@ from fastapi import APIRouter
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
-from starlette.responses import RedirectResponse
+from starlette.concurrency import run_in_threadpool
+from starlette.responses import RedirectResponse, Response
 
 from database import SessionLocal, engine
 import models
@@ -128,47 +129,7 @@ def get_subgoal_branch_from_triple_filtered(subgoal_id, db: Session):
     return path
 
 
-@router.get("/")
-async def contextualization(request: Request, db: Session = Depends(get_db)):
-    all_goal = db.query(models.Goal).all()
-    return templates.TemplateResponse('contextualization.html', context={'request': request, 'all_goal': all_goal})
-
-
-@router.get("/contextualization/{hlg_id}")
-async def contextualization(request: Request, hlg_id: int, db: Session = Depends(get_db)):
-    all_goal = db.query(models.Goal).all()
-
-    goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == hlg_id).first()
-
-    if not goal_with_outputs:
-        return RedirectResponse("/")
-
-    highlevelgoal = goal_with_outputs.goal_name
-
-    data = []
-
-    for output in goal_with_outputs.outputs:
-        data.append({
-            'id': output.id,
-            'goal_id': output.goal_id,
-            'goal_type': output.goal_type,
-            'generated_text': output.generated_text,
-            'entailed_triple': output.get_entailed_triples()
-        })
-
-    # Create a DataFrame for storing all outputs
-    outputs_df = pd.DataFrame(data)
-
-    return templates.TemplateResponse('contextualization.html', context={'request': request,
-                                                                         'highlevelgoal': highlevelgoal,
-                                                                         'outputs': outputs_df,
-                                                                         'goal_with_outputs': goal_with_outputs,
-                                                                         'hlg_id': hlg_id,
-                                                                         'all_goal': all_goal})
-
-
-@router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], db: Session) -> Response:
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -187,10 +148,10 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                 print("goal_id:")
                 print(goal_id)
                 triples_with_ids.append({
-                    'goal_id': goal_id, # High-level goal ID
-                    'filtered_triple': triple # Filtered triples (selected by the designer)
+                    'goal_id': goal_id,  # High-level goal ID
+                    'filtered_triple': triple  # Filtered triples (selected by the designer)
                 })
-            triples_with_ids_df = pd.DataFrame(triples_with_ids) # Add the elements in a dataframe
+            triples_with_ids_df = pd.DataFrame(triples_with_ids)  # Add the elements in a dataframe
 
             print("\nTRIPLES WITH IDS:")
             print(triples_with_ids_df.to_string())
@@ -201,12 +162,14 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                     print(row.filtered_triple)
                     modified_filtered_triples.append({
                         'high_level_goal_id': row.goal_id,  # High-level goal ID
-                        'triple_filtered_from_hlg': row.filtered_triple.replace("', '", ' ').replace("['", "").replace("']", "")
+                        'triple_filtered_from_hlg': row.filtered_triple.replace("', '", ' ').replace("['", "").replace(
+                            "']", "")
                     })
 
                 modified_filtered_triples_df = pd.DataFrame(modified_filtered_triples)
 
-                subgoal_id = modified_filtered_triples_df.loc[0, 'high_level_goal_id'] # Replace with the actual subgoal id
+                subgoal_id = modified_filtered_triples_df.loc[
+                    0, 'high_level_goal_id']  # Replace with the actual subgoal id
                 subgoal_branch = get_subgoal_branch_from_triple_filtered(subgoal_id, db)
 
                 print("\n")
@@ -269,7 +232,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         print(anchor_points_df)
 
         # --- Transform negative triples ---  --- Sentiment analysis ---
-        anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
+        anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
+            lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []
@@ -345,7 +309,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
         if triples_to_process_grouped:
             grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
             if len(grps_of_triples):
-                predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t, tokenizer=tokenizer_g2t)
+                predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t,
+                                            tokenizer=tokenizer_g2t)
                 for i in range(len(triples_to_process_grouped)):
                     if len(triples_to_process_grouped[i][0]) == 1:
                         predictions.insert(i, "")
@@ -353,7 +318,6 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
                 predictions = [""] * len(triples_to_process_grouped)
 
             for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
-
                 processed_data.append({
                     "ENTAILED_TRIPLE": triples,
                     "GOAL_TYPE": gt,
@@ -371,7 +335,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
 
             # Add the entailed triples and the goal type in the database (table: outputs)
             for row in processed_data_df.itertuples():
-                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_type=row.GOAL_TYPE, goal_id=new_goal.id)
+                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_type=row.GOAL_TYPE,
+                                             goal_id=new_goal.id)
                 new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
                 db.add(new_results)
             db.commit()
@@ -392,7 +357,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
 
             if hlg_id != -1:
                 # Add the high-level goal and the subgoal in the database (table: hierarchy)
-                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
+                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement,
+                                                subgoal_id=new_goal.id)
                 db.add(db_hierarchy)
                 db.commit()
                 print("\nUpdate the hierarchy!")
@@ -432,7 +398,8 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             db.commit()
 
             if hlg_id != -1:
-                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement, subgoal_id=new_goal.id)
+                db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement,
+                                                subgoal_id=new_goal.id)
                 db.add(db_hierarchy)
                 db.commit()
                 print("\nUpdate the hierarchy!")
@@ -447,3 +414,54 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             })
     else:
         return RedirectResponse(f"/contextualization/{goal_with_outputs.id}", status_code=302)
+
+
+@router.get("/")
+async def contextualization(request: Request, db: Session = Depends(get_db)):
+    all_goal = db.query(models.Goal).all()
+    return templates.TemplateResponse('contextualization.html', context={'request': request, 'all_goal': all_goal})
+
+
+@router.get("/contextualization/{hlg_id}")
+async def contextualization(request: Request, hlg_id: int, db: Session = Depends(get_db)):
+    all_goal = db.query(models.Goal).all()
+
+    goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == hlg_id).first()
+
+    if not goal_with_outputs:
+        return RedirectResponse("/")
+
+    highlevelgoal = goal_with_outputs.goal_name
+
+    data = []
+
+    with_generated_texts = False
+
+    for output in goal_with_outputs.outputs:
+        data.append({
+            'id': output.id,
+            'goal_id': output.goal_id,
+            'goal_type': output.goal_type,
+            'generated_text': output.generated_text,
+            'entailed_triple': output.get_entailed_triples()
+        })
+        if output.generated_text != "":
+            with_generated_texts = True
+
+    # Create a DataFrame for storing all outputs
+    outputs_df = pd.DataFrame(data)
+
+    return templates.TemplateResponse('contextualization.html', context={'request': request,
+                                                                         'highlevelgoal': highlevelgoal,
+                                                                         'outputs': outputs_df,
+                                                                         'goal_with_outputs': goal_with_outputs,
+                                                                         'hlg_id': hlg_id,
+                                                                         'all_goal': all_goal,
+                                                                         'with_generated_texts': with_generated_texts})
+
+
+@router.post("/")
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+    # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
+    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type, refinement, highlevelgoal, hlg_id, filtered_out_triples_with_goal_id, db))
+    return response

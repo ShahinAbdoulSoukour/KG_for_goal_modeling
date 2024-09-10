@@ -13,8 +13,12 @@
                     <h5 class="modal-title" id="loadingModalLabel">Identifying relevant information...</h5>
                 </div>
                 <div class="modal-body">
-                    This may take a while, please don't close this window.
-                    <br><br>
+                    <p>This may take a while, please don't close this window.</p>
+                    <p>However, if you want to work on another subgoal, you can <a href="javascript:void(0);" id="openGoalModelTab">open the goal model in a new tab <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+                        <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+                    </svg></a></p>
+                    <br>
                     <div class="progress" style="height: 20px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
                              aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
@@ -98,7 +102,9 @@
             <thead>
             <tr>
                 <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-                <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of certain information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                {% if with_generated_texts %}
+                <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of the groups of information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                {% endif %}
                 <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
             </tr>
             </thead>
@@ -106,7 +112,9 @@
             {% for idx, row in outputs.iterrows() %} <!-- outputs -->
             <tr>
                 <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
+                {% if with_generated_texts %}
                 <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+                {% endif %}
                 <td>
                     {% for t in row['entailed_triple'] %}
                     <div class="form-check">
@@ -132,6 +140,7 @@
     {% else %}
     <br>
     <!-- Entailed triples -->
+    {% if outputs|length > 0 %}
     <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
         <thead>
         <tr>
@@ -144,13 +153,13 @@
         {% for idx, row in outputs.iterrows() %} <!-- outputs -->
         <tr>
             <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-            <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+            <td data-name="generated_text" class="generated_text prevent-select">{{ row['generated_text'] }}</td>
             <td>
                 {% for t in row['entailed_triple'] %}
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
                            id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                    <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
+                    <label class="form-check-label prevent-select" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
                 </div>
                 {% endfor %}
             </td>
@@ -158,6 +167,11 @@
         {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
+        No relevant information has been identified!
+    </div>
+    {% endif %}
     </form>
     {% endif %}
     <br>
@@ -232,6 +246,10 @@
 
         $("#verificationModalNoBtn").click(function() {
             $("#verificationModal").modal("hide")
+        })
+
+        $("#openGoalModelTab").click(function() {
+            window.open('/goal_model_generation', '_blank').focus();
         })
     });
 </script>
