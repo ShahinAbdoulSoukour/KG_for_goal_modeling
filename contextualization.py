@@ -366,6 +366,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             # Extract the entailed triples and the generated texts (to print)
             outputs = db.query(models.Outputs).filter(models.Outputs.goal_id == new_goal.id).all()
 
+            with_generated_texts = False
+
             # Extract data into a list of dictionaries
             data = []
             for output in outputs:
@@ -376,6 +378,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                     'generated_text': output.generated_text,
                     'entailed_triple': output.get_entailed_triples()
                 })
+                if output.generated_text != "":
+                    with_generated_texts = True
 
             # Create a DataFrame for storing all outputs
             outputs_df = pd.DataFrame(data)
@@ -388,6 +392,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                 'goal_with_outputs': goal_with_outputs,
                 'hlg_id': new_goal.id,
                 'all_goal': all_goal,  # for the input (for autocompletion)
+                'with_generated_texts': with_generated_texts
             })
         else:
             message = "No triple"
