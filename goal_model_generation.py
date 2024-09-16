@@ -11,6 +11,8 @@ from transformers.utils import logging
 import torch
 import os
 
+import json
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 logging.set_verbosity_error()
@@ -41,8 +43,25 @@ def process_goal_hierarchy(db: Session):
     # Fetch all hierarchies
     hierarchies = db.query(models.Hierarchy).all()
 
+    # Fetch all triple filtered data
+    triple_filtered_data = db.query(models.Triple_Filtered).all()
+
     # Map of goal id to goal object
     goal_map = {goal.id: goal for goal in all_goals}
+
+    # Map of goal id to its corresponding triple filtered data
+    triple_filtered_map = {}
+    for triple in triple_filtered_data:
+        print("\nTriple Filtered:")
+        print(triple)
+        if triple.subgoal_id in triple_filtered_map:
+            triple_filtered_map[triple.subgoal_id].append(triple.triple_filtered_from_hlg)
+            print(triple_filtered_map)
+        else:
+            triple_filtered_map[triple.subgoal_id] = [triple.triple_filtered_from_hlg]
+
+    print("\nMAP:")
+    print(triple_filtered_map)
 
     # Process and map the goals with their hierarchies
     hierarchy_data = []
@@ -50,6 +69,13 @@ def process_goal_hierarchy(db: Session):
     for hierarchy in hierarchies:
         subgoal = goal_map[hierarchy.subgoal_id]
         high_level_goal = goal_map.get(hierarchy.high_level_goal_id)  # Can be None
+
+        # Get the triple filtered data for this subgoal, if any
+        triples_for_subgoal = triple_filtered_map.get(subgoal.id, [])
+
+        print("\ntriples_for_subgoal:")
+        print(triples_for_subgoal)
+
 
         hierarchy_data.append({
             'hierarchy_id': hierarchy.id,
@@ -59,8 +85,12 @@ def process_goal_hierarchy(db: Session):
             'high_level_goal_id': high_level_goal.id if high_level_goal else None,
             'high_level_goal_name': high_level_goal.goal_name if high_level_goal else None,
             'high_level_goal_goal_type': high_level_goal.goal_type if high_level_goal else None,
-            'refinement': hierarchy.refinement
+            'refinement': hierarchy.refinement,
+            'triple_filtered': json.dumps(triples_for_subgoal) if triples_for_subgoal else None  # Add triple data
         })
+
+    print("\nHIERARCHY DATA:")
+    print(hierarchy_data)
 
     # Add single goals with no hierarchy
     for goal in all_goals:
@@ -73,7 +103,8 @@ def process_goal_hierarchy(db: Session):
                 'high_level_goal_id': None,
                 'high_level_goal_name': None,
                 'high_level_goal_goal_type': None,
-                'refinement': None
+                'refinement': None,
+                'triple_filtered': json.dumps(triples_for_subgoal) if triples_for_subgoal else None  # Add triple data
             })
 
     return hierarchy_data
