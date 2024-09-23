@@ -50,18 +50,18 @@ def process_goal_hierarchy(db: Session):
     goal_map = {goal.id: goal for goal in all_goals}
 
     # Map of goal id to its corresponding triple filtered data
-    triple_filtered_map = {}
-    for triple in triple_filtered_data:
-        print("\nTriple Filtered:")
-        print(triple)
-        if triple.subgoal_id in triple_filtered_map:
-            triple_filtered_map[triple.subgoal_id].append(triple.triple_filtered_from_hlg)
-            print(triple_filtered_map)
-        else:
-            triple_filtered_map[triple.subgoal_id] = [triple.triple_filtered_from_hlg]
+    #triple_filtered_map = {}
+    #for triple in triple_filtered_data:
+    #    print("\nTriple Filtered:")
+    #    print(triple)
+    #    if triple.subgoal_id in triple_filtered_map:
+    #        triple_filtered_map[triple.subgoal_id].append(triple.triple_filtered_from_hlg)
+    #        print(triple_filtered_map)
+    #    else:
+    #        triple_filtered_map[triple.subgoal_id] = [triple.triple_filtered_from_hlg]
 
-    print("\nMAP:")
-    print(triple_filtered_map)
+    #print("\nMAP:")
+    #print(triple_filtered_map)
 
     # Process and map the goals with their hierarchies
     hierarchy_data = []
@@ -71,10 +71,10 @@ def process_goal_hierarchy(db: Session):
         high_level_goal = goal_map.get(hierarchy.high_level_goal_id)  # Can be None
 
         # Get the triple filtered data for this subgoal, if any
-        triples_for_subgoal = triple_filtered_map.get(subgoal.id, [])
+        #triples_for_subgoal = triple_filtered_map.get(subgoal.id, [])
 
-        print("\ntriples_for_subgoal:")
-        print(triples_for_subgoal)
+        #print("\ntriples_for_subgoal:")
+        #print(triples_for_subgoal)
 
 
         hierarchy_data.append({
@@ -86,7 +86,7 @@ def process_goal_hierarchy(db: Session):
             'high_level_goal_name': high_level_goal.goal_name if high_level_goal else None,
             'high_level_goal_goal_type': high_level_goal.goal_type if high_level_goal else None,
             'refinement': hierarchy.refinement,
-            'triple_filtered': json.dumps(triples_for_subgoal) if triples_for_subgoal else None  # Add triple data
+            #'triple_filtered': json.dumps(triples_for_subgoal) if triples_for_subgoal else None  # Add triple data
         })
 
     print("\nHIERARCHY DATA:")
@@ -95,6 +95,8 @@ def process_goal_hierarchy(db: Session):
     # Add single goals with no hierarchy
     for goal in all_goals:
         if not any(goal.id == h['subgoal_id'] or goal.id == h['high_level_goal_id'] for h in hierarchy_data):
+            #triples_for_goal = triple_filtered_map.get(goal.id, [])
+
             hierarchy_data.append({
                 'hierarchy_id': None,
                 'subgoal_id': goal.id,
@@ -104,7 +106,7 @@ def process_goal_hierarchy(db: Session):
                 'high_level_goal_name': None,
                 'high_level_goal_goal_type': None,
                 'refinement': None,
-                'triple_filtered': json.dumps(triples_for_subgoal) if triples_for_subgoal else None  # Add triple data
+                #'triple_filtered': json.dumps(triples_for_goal) if triples_for_goal else None  # Add triple data
             })
 
     return hierarchy_data
