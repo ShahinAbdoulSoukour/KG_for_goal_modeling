@@ -38,7 +38,7 @@ def graph_explorator(df, goal, graph, model_nli_name):
             # --> test the entailment
             entailment_concatenate_triples_result = test_entailment_api(concatenated_triples_df, model_nli_name)
 
-            print("\nENTAILMENT TEST RESULTS:")
+            print("\nENTAILMENT TEST RESULTS (CONCATENATED TRIPLES):")
             print(entailment_concatenate_triples_result.to_string())
 
             # extract the highest score (entailment)
@@ -82,6 +82,9 @@ def graph_explorator(df, goal, graph, model_nli_name):
                             # --> test the entailment
                             entailment_concatenate_triples_result = test_entailment_api(concatenated_triples_df, model_nli_name)
 
+                            print("\nENTAILMENT TEST RESULTS (CONCATENATED TRIPLES):")
+                            print(entailment_concatenate_triples_result.to_string())
+
                             # update the previous score
                             entailment_score = current_score
 
@@ -106,4 +109,6 @@ def graph_explorator(df, goal, graph, model_nli_name):
                         #print("STOP THE EXPLORATION, MOVE TO THE NEXT...")
                         break
 
+    print("\n=>ENTAILED TRIPLES:")
+    print(entailed_triples_df.sort_values(['SCORE'], ascending=[False]).to_string())
     return entailed_triples_df
