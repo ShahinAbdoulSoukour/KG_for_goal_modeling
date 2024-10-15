@@ -74,6 +74,14 @@
                 </select>
             </div>
             {% endif %}
+            <div class="input-group-prepend">
+                <!-- Max depth -->
+                <input min="0" max="10" style="width: 8rem;" type="number" class="form-control" placeholder="Max depth" name="max_depth" id="input-max_depth" data-toggle="tooltip" title="Maximum depth of exploration" required>
+            </div>
+            <div class="input-group-prepend">
+                <!-- Beam width -->
+                <input min="0" max="50" style="width: 13.5rem;" type="number" class="form-control" placeholder="Num. of triple neigbors" name="beam_width" id="input-beam_width" data-toggle="tooltip" title="Maximum number of neighbors to explore at each step" required>
+            </div>
             <!-- Input - High-level goal -->
             <input type="text" class="form-control" placeholder="{% if highlevelgoal is defined %}Enter the subgoal{% else %}Enter the high-level goal{% endif %}" name="highlevelgoal" id="input-datalist" list="list-goal" required>
             <datalist id="list-goal">
@@ -94,88 +102,105 @@
         <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
 
         {% if not goal_with_outputs %} <!-- -->
-
-        {% if unique_triples_entailed is defined %}
-        <br>
-        <!-- Entailed triples -->
-        <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-            <thead>
-            <tr>
-                <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-                {% if with_generated_texts %}
-                <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of the groups of information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
-                {% endif %}
-                <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for idx, row in outputs.iterrows() %} <!-- outputs -->
-            <tr>
-                <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-                {% if with_generated_texts %}
-                <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
-                {% endif %}
-                <td>
-                    {% for t in row['entailed_triple'] %}
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
-                               id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                        <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
-                    </div>
+            {% if unique_triples_entailed is defined %}
+            <div class="container">
+              <div class="row">
+                  <div class="col">Max depth: <b>{{ max_depth }}</b></div>
+                  <div class="col">Number of triple neighbors: <b>{{ beam_width }}</b></div>
+              </div>
+            </div>
+            <br>
+            <!-- Entailed triples -->
+            <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+                <thead>
+                <tr>
+                    <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
+                    {% if with_generated_texts %}
+                    <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of the groups of information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                    {% endif %}
+                    <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for idx, row in outputs.iterrows() %} <!-- outputs -->
+                    <tr>
+                        <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
+                        {% if with_generated_texts %}
+                        <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
+                        {% endif %}
+                        <td>
+                            {% for t in row['entailed_triple'] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
+                                       id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
+                                <label class="form-check-label" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
                     {% endfor %}
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </form>
-    {% else %}
-        {% if message is defined %}
-        <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-            No relevant information has been identified!
-        </div>
-        {% endif %}
-    {% endif %}
-
-    {% else %}
-    <br>
-    <!-- Entailed triples -->
-    {% if outputs|length > 0 %}
-    <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-        <thead>
-        <tr>
-            <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-            {% if with_generated_texts %}
-            <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                </tbody>
+            </table>
+            </form>
+            {% else %}
+                {% if message is defined %}
+                    <div class="container">
+                      <div class="row">
+                          <div class="col">Max depth: <b>{{ max_depth }}</b></div>
+                          <div class="col">Number of triple neighbors: <b>{{ beam_width }}</b></div>
+                      </div>
+                    </div>
+                    <br>
+                    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
+                        No relevant information has been identified!
+                    </div>
+                {% endif %}
             {% endif %}
-            <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for idx, row in outputs.iterrows() %} <!-- outputs -->
-        <tr>
-            <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-            <td data-name="generated_text" class="generated_text prevent-select">{{ row['generated_text'] }}</td>
-            <td>
-                {% for t in row['entailed_triple'] %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
-                           id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                    <label class="form-check-label prevent-select" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
+        {% else %}
+            <div class="container">
+              <div class="row">
+                  <div class="col">Max depth: <b>{{ params.max_depth }}</b></div>
+                  <div class="col">Number of triple neighbors: <b>{{ params.beam_width }}</b></div>
+              </div>
+            </div>
+            <br>
+            <!-- Entailed triples -->
+            {% if outputs|length > 0 %}
+                <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
+                    <thead>
+                    <tr>
+                        <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
+                        {% if with_generated_texts %}
+                        <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
+                        {% endif %}
+                        <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for idx, row in outputs.iterrows() %} <!-- outputs -->
+                    <tr>
+                        <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
+                        <td data-name="generated_text" class="generated_text prevent-select">{{ row['generated_text'] }}</td>
+                        <td>
+                            {% for t in row['entailed_triple'] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
+                                       id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
+                                <label class="form-check-label prevent-select" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }} {{ t[2] }}</label>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
+                    No relevant information has been identified!
                 </div>
-                {% endfor %}
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-        No relevant information has been identified!
-    </div>
-    {% endif %}
-    </form>
-    {% endif %}
+            {% endif %}
+            </form>
+        {% endif %}
     <br>
 </div>
 
@@ -199,8 +224,14 @@
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
+        $("#input-beam_width").on("input", function() {
+            $(this).css("background-color", "#ffffff")
+        })
+        $("#input-max_depth").on("input", function() {
+            $(this).css("background-color", "#ffffff")
+        })
         $("#okBtn").click(function() {
-            if ($("#input-datalist").val() && $("#goal_type").val() && ($("#refinement").val() || !$("#refinement").length)) {
+            if ($("#input-datalist").val() && $("#goal_type").val() && $("#input-max_depth").val() && $("#input-beam_width").val() && ($("#refinement").val() || !$("#refinement").length)) {
                 if ($("#data_triples td").hasClass("dataTables_empty") ||
                     !$("#data_triples").length ||
                     $('input[name="filtered_out_triples_with_goal_id"]:checkbox:checked').length) {
@@ -229,6 +260,14 @@
                 if (!$("#refinement").val() && $("#refinement").length) {
                     $("#refinement").removeClass("text-black-50 bg-light")
                     $("#refinement").css("background-color", "#ffda69")
+                }
+                if (!$("#input-beam_width").val() && $("#input-beam_width").length) {
+                    $("#input-beam_width").removeClass("text-black-50 bg-light")
+                    $("#input-beam_width").css("background-color", "#ffda69")
+                }
+                if (!$("#input-max_depth").val() && $("#input-max_depth").length) {
+                    $("#input-max_depth").removeClass("text-black-50 bg-light")
+                    $("#input-max_depth").css("background-color", "#ffda69")
                 }
             }
         });

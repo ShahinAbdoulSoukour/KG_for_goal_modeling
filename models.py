@@ -36,6 +36,8 @@ class Goal(Base):
     subgoal_hierarchies = relationship("Hierarchy", foreign_keys="[Hierarchy.subgoal_id]", back_populates="subgoal",
                                        cascade="all, delete-orphan")
 
+    param = relationship("Exploration_Parameter", back_populates="goal", foreign_keys="[Exploration_Parameter.goal_id]", cascade="all, delete-orphan")
+
 
 class Outputs(Base):
     __tablename__ = "outputs"
@@ -72,3 +74,12 @@ class Triple_Filtered(Base):
     def get_entailed_triples(self):
         return json.loads(self.triple_filtered_from_hlg)
 
+
+class Exploration_Parameter(Base):
+    __tablename__ = "exploration_parameter"
+    id = Column(Integer, primary_key=True)
+    goal_id = Column(Integer, ForeignKey('goal.id'))
+    max_depth = Column(Integer)
+    beam_width = Column(Integer)
+
+    goal = relationship("Goal", back_populates="param")

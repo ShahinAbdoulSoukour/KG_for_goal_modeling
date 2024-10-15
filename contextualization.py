@@ -23,9 +23,11 @@ import torch
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import test_entailment_api, triple_sentiment_analysis_api
-from graph_explorator import graph_explorator
+from graph_explorator import graph_explorator_bfs_optimized
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
+
+import time
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -129,7 +131,10 @@ def get_subgoal_branch_from_triple_filtered(subgoal_id, db: Session):
     return path
 
 
-def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], db: Session) -> Response:
+def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], beam_width: int, max_depth: int, db: Session) -> Response:
+    # get the start time
+    st = time.time()
+
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.goal_name == highlevelgoal).first()
@@ -269,65 +274,78 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(entailment_result.to_string())
 
         # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator(entailment_result, highlevelgoal, domain_graph, model_nli_name)
+        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts, model_nli_name, beam_width, max_depth)
 
         # --- ### ---
-        all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in
-                                triples]
+        #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
 
-        print("\nall_triples_entailed")
-        print(all_triples_entailed)
+        #print("\nall_triples_entailed")
+        #print(all_triples_entailed)
 
-        if not entailed_triples_df.empty:
-            all_triples_entailed.append(triples[0] for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist())
-
+        all_triples_entailed = []
         unique_triples_entailed = []
 
-        for triple in all_triples_entailed:
-            if (triple not in unique_triples_entailed) and (type(triple) is list):
-                unique_triples_entailed.append(triple)
+        if not entailed_triples_df.empty:
+            #all_triples_entailed.append(triples[0] for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist())
+            #print('\nALL ENTAILED TRIPLES:')
+            #print(all_triples_entailed)
 
-        print("\nUNIQUE TRIPLES:")
-        print(unique_triples_entailed)
+            #for triple in all_triples_entailed:
+            #    if (triple not in unique_triples_entailed) and (type(triple) is list):
+            #        unique_triples_entailed.append(triple)
 
-        triples_already_processed = []
-        processed_data = []
-        triples_to_process_grouped = []
+            #print("\nUNIQUE TRIPLES:")
+            #print(unique_triples_entailed)
 
-        for row in entailed_triples_df.itertuples():
-            triples_to_process = []
+            triples_already_processed = []
+            processed_data = []
+            triples_to_process_grouped = []
 
-            for triple in row.SUBGOALS_SERIALIZED:
-                if (triple not in triples_already_processed) and (type(triple) is list):
-                    triples_to_process.append(triple)
+            for row in entailed_triples_df.itertuples():
+                triples_to_process = []
 
-            if triples_to_process:
-                triples_to_process_grouped.append((triples_to_process, row.GOAL_TYPE))
+                for triple in row.SUBGOALS_SERIALIZED:
+                    if (triple not in triples_already_processed) and (type(triple) is list):
+                        triples_to_process.append(triple)
 
-            triples_already_processed.extend(triples_to_process)
+                if triples_to_process:
+                    triples_to_process_grouped.append((triples_to_process, row.GOAL_TYPE))
 
-        if triples_to_process_grouped:
-            grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
-            if len(grps_of_triples):
-                predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t,
-                                            tokenizer=tokenizer_g2t)
-                for i in range(len(triples_to_process_grouped)):
-                    if len(triples_to_process_grouped[i][0]) == 1:
-                        predictions.insert(i, "")
-            else:
-                predictions = [""] * len(triples_to_process_grouped)
+                triples_already_processed.extend(triples_to_process)
 
-            for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
-                processed_data.append({
-                    "ENTAILED_TRIPLE": triples,
-                    "GOAL_TYPE": gt,
-                    "GENERATED_TEXT": prediction
-                })
+            print('\nTRIPLES TO PROCESS:')
+            print(triples_to_process)
 
-        # Create DataFrame from the list of dictionaries
-        processed_data_df = pd.DataFrame(processed_data)
+            print('\nTRIPLES ALREADY PROCESSED:')
+            print(triples_already_processed)
 
-        if unique_triples_entailed:
+            print('\nTRIPLES TO PROCESS GROUPED:')
+            print(triples_to_process_grouped)
+
+            if triples_to_process_grouped:
+                grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
+                if len(grps_of_triples):
+                    predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t,
+                                                tokenizer=tokenizer_g2t)
+                    for i in range(len(triples_to_process_grouped)):
+                        if len(triples_to_process_grouped[i][0]) == 1:
+                            predictions.insert(i, "")
+                else:
+                    predictions = [""] * len(triples_to_process_grouped)
+
+                for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
+                    processed_data.append({
+                        "ENTAILED_TRIPLE": triples,
+                        "GOAL_TYPE": gt,
+                        "GENERATED_TEXT": prediction
+                    })
+
+            # Create DataFrame from the list of dictionaries
+            processed_data_df = pd.DataFrame(processed_data)
+
+            print('\nPROCESSED DATA (G2T):')
+            print(processed_data_df.to_string())
+
             # Add the goal (as high-level goal) in the database (table: goal)
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
@@ -363,6 +381,12 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                 db.commit()
                 print("\nUpdate the hierarchy!")
 
+            # Save exploration parameters
+            new_param = models.Exploration_Parameter(goal_id=new_goal.id, max_depth=max_depth, beam_width=beam_width)
+            db.add(new_param)
+            db.commit()
+            print('\nParameter added in the database!')
+
             # Extract the entailed triples and the generated texts (to print)
             outputs = db.query(models.Outputs).filter(models.Outputs.goal_id == new_goal.id).all()
 
@@ -384,6 +408,13 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             # Create a DataFrame for storing all outputs
             outputs_df = pd.DataFrame(data)
 
+            # get the end time
+            et = time.time()
+
+            # get the execution time
+            elapsed_time = et - st
+            print('Execution time:', elapsed_time, 'seconds')
+
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
                 'highlevelgoal': highlevelgoal,
@@ -392,7 +423,9 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                 'goal_with_outputs': goal_with_outputs,
                 'hlg_id': new_goal.id,
                 'all_goal': all_goal,  # for the input (for autocompletion)
-                'with_generated_texts': with_generated_texts
+                'with_generated_texts': with_generated_texts,
+                'beam_width': beam_width,
+                'max_depth': max_depth
             })
         else:
             message = "No triple"
@@ -409,6 +442,20 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                 db.commit()
                 print("\nUpdate the hierarchy!")
 
+            # Save exploration parameters
+            new_param = models.Exploration_Parameter(goal_id=new_goal.id, max_depth=max_depth,
+                                                     beam_width=beam_width)
+            db.add(new_param)
+            db.commit()
+            print('\nParameter added in the database!')
+
+            # get the end time
+            et = time.time()
+
+            # get the execution time
+            elapsed_time = et - st
+            print('Execution time:', elapsed_time, 'seconds')
+
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
                 'highlevelgoal': highlevelgoal,
@@ -416,6 +463,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                 'hlg_id': new_goal.id,
                 'goal_with_outputs': goal_with_outputs,
                 'all_goal': all_goal,  # for the input (for autocompletion)
+                'beam_width': beam_width,
+                'max_depth': max_depth
             })
     else:
         return RedirectResponse(f"/contextualization/{goal_with_outputs.id}", status_code=302)
@@ -432,6 +481,7 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == hlg_id).first()
+    params = db.query(models.Exploration_Parameter).filter(models.Exploration_Parameter.goal_id == hlg_id).first()
 
     if not goal_with_outputs:
         return RedirectResponse("/")
@@ -462,11 +512,12 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
                                                                          'goal_with_outputs': goal_with_outputs,
                                                                          'hlg_id': hlg_id,
                                                                          'all_goal': all_goal,
-                                                                         'with_generated_texts': with_generated_texts})
+                                                                         'with_generated_texts': with_generated_texts,
+                                                                         "params": params})
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), beam_width: int = Form(...), max_depth: int = Form(...), db: Session = Depends(get_db)):
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
-    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type, refinement, highlevelgoal, hlg_id, filtered_out_triples_with_goal_id, db))
+    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type, refinement, highlevelgoal, hlg_id, filtered_out_triples_with_goal_id, beam_width, max_depth, db))
     return response
