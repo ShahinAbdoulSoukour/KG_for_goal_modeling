@@ -94,15 +94,19 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, b
         )
         concatenated_triples.sort_values(by='SIMILARITY_SCORE', inplace=True, ascending=False)
 
+        # Beam search: explore only the top `beam_width` neighbors
+        concatenated_triples = concatenated_triples.head(beam_width).drop('SIMILARITY_SCORE', axis=1)
+
+        # other possibility
         # Determine the score interval based on the highest similarity score
-        highest_score = concatenated_triples['SIMILARITY_SCORE'].max()
-        score_interval = [highest_score * beam_width, highest_score]
+        #highest_score = concatenated_triples['SIMILARITY_SCORE'].max()
+        #score_interval = [highest_score * beam_width, highest_score]
 
         # Filter concatenated_triples to keep only those within the score interval
-        filtered_concatenated_triples = concatenated_triples[
-            (concatenated_triples['SIMILARITY_SCORE'] >= score_interval[0]) &
-            (concatenated_triples['SIMILARITY_SCORE'] <= score_interval[1])
-            ].drop('SIMILARITY_SCORE', axis=1)
+        #filtered_concatenated_triples = concatenated_triples[
+        #    (concatenated_triples['SIMILARITY_SCORE'] >= score_interval[0]) &
+        #    (concatenated_triples['SIMILARITY_SCORE'] <= score_interval[1])
+        #    ].drop('SIMILARITY_SCORE', axis=1)
 
         print('\nTHE TOP beam_width NEIGHBORS:')
         print(concatenated_triples)
