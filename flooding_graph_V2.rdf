@@ -16,8 +16,8 @@
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Alerts"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Stormwater_Bassin">
-    <rdfs:label>Stormwater bassin</rdfs:label>
+  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Stormwater_Basin">
+    <rdfs:label>Stormwater basin</rdfs:label>
     <ex:Mitigate rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensors"/>
   </rdf:Description>
@@ -98,7 +98,7 @@
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Retention_Ponds">
     <rdfs:label>Retention ponds</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Stormwater_Bassin"/>
+    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Stormwater_Basin"/>
     <ex:Improve rdf:resource="http://www.semanticweb.org/Flooding#Water_Quality"/>
     <ex:ContributeTo rdf:resource="http://www.semanticweb.org/Flooding#Flood_Control"/>
   </rdf:Description>
@@ -147,7 +147,7 @@
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Detention_Ponds">
     <rdfs:label>Detention ponds</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Stormwater_Bassin"/>
+    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Stormwater_Basin"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Buildings_Damage">
     <rdfs:label>Buildings damage</rdfs:label>
