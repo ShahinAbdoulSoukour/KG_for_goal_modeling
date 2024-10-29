@@ -131,9 +131,18 @@ def get_subgoal_branch_from_triple_filtered(subgoal_id, db: Session):
     return path
 
 
-def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], beam_width: int, max_depth: int, db: Session) -> Response:
+def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], beam_width: float, max_depth: int, db: Session) -> Response:
     # get the start time
     st = time.time()
+
+    # Goal
+    print('\nGoal:', highlevelgoal)
+
+    # Max depth
+    print('\nMax Depth:', max_depth)
+
+    # Beam width
+    print('\nBeam width:', beam_width)
 
     all_goal = db.query(models.Goal).all()
 
@@ -517,7 +526,7 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), beam_width: int = Form(...), max_depth: int = Form(...), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), beam_width: float = Form(...), max_depth: int = Form(...), db: Session = Depends(get_db)):
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
     response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type, refinement, highlevelgoal, hlg_id, filtered_out_triples_with_goal_id, beam_width, max_depth, db))
     return response
