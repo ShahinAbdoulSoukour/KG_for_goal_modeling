@@ -22,7 +22,7 @@ from sentence_transformers import SentenceTransformer
 import torch
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
-from utils import test_entailment, test_sentiment_analysis
+from utils import test_entailment, triple_sentiment_analysis_api, triple_sentiment_analysis, detect_entailment_api, detect_entailment
 from graph_explorator import graph_explorator_bfs_optimized
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
@@ -34,7 +34,17 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 logging.set_verbosity_error()
 
-#load_dotenv()
+load_dotenv()
+
+# Check for API keys
+api_url_nli = os.getenv("API_URL_NLI")
+api_token = os.getenv("HF_TOKEN")
+api_url_sent = os.getenv("API_URL_SENT")
+
+use_api_nli = bool(api_url_nli and api_token)
+use_api_sentiment = bool(api_url_sent and api_token)
+
+
 # --- Initialize inference servers
 #API_URL_sent = os.environ["API_URL_SENT"]
 #API_URL_nli = os.environ["API_URL_NLI"]
@@ -60,13 +70,6 @@ logging.set_verbosity_error()
 
 # --- Import models ---
 model_sts = SentenceTransformer('all-mpnet-base-v2')
-
-model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
-tokenizer_nli = AutoTokenizer.from_pretrained(model_nli_name)
-model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).to(device)
-
-sentiment_model_path = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, tokenizer=sentiment_model_path, device=device)
 
 model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
 tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
@@ -251,8 +254,15 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(anchor_points_df)
 
         # --- Transform negative triples ---  --- Sentiment analysis ---
-        anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
-            lambda triple: test_sentiment_analysis(triple[0], sentiment_task, neutral_predicates=["is a type of"])[0])
+        if not use_api_sentiment: # Load sentiment analysis model if API is unavailable
+            sentiment_model_path = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+            sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, tokenizer=sentiment_model_path, device=device)
+            anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
+                lambda triple: triple_sentiment_analysis(triple[0], sentiment_task, neutral_predicates=["is a type of"])[0])
+        else:
+            anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
+                lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
+
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []
@@ -283,13 +293,32 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(transformed_anchor_points.to_string())
 
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
-        entailment_result = test_entailment(transformed_anchor_points, tokenizer_nli, model_nli_name, model_nli)
-        print("\nENTAILMENT RESULTS:")
-        print(entailment_result.to_string())
+        if use_api_nli:
+            print("\n--> True")
+            entailment_result = test_entailment(transformed_anchor_points, use_api_nli)
+            print("\nENTAILMENT RESULTS:")
+            print(entailment_result.to_string())
 
-        # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
-                                                             model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth)
+            # --- Explore graph to improve contextualization ---
+            entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph,
+                                                                 model_sts,
+                                                                 beam_width, max_depth,
+                                                                 use_api_nli)
+        else:
+            print("\n--> False")
+            model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+            tokenizer_nli = AutoTokenizer.from_pretrained(model_nli_name)
+            model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).to(device)
+
+            entailment_result = test_entailment(transformed_anchor_points, use_api_nli, tokenizer_nli, model_nli_name, model_nli)
+            print("\nENTAILMENT RESULTS:")
+            print(entailment_result.to_string())
+
+            # --- Explore graph to improve contextualization ---
+            entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
+                                                                 beam_width, max_depth,
+                                                                 use_api_nli,
+                                                                 model_nli_name, tokenizer_nli, model_nli)
 
         # --- ### ---
         #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
