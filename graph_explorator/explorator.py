@@ -1,6 +1,6 @@
 import pandas as pd
 
-from utils.functions import get_neighbors, test_entailment_api
+from utils.functions import get_neighbors, test_entailment
 import heapq
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -12,7 +12,7 @@ def hashable_premise_serialized(premise_serialized):
     return premise_serialized
 
 
-def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, beam_width, max_depth):
+def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth):
     entailed_triples_df = pd.DataFrame(columns=["GOAL_TYPE", "SUBGOALS", "SUBGOALS_SERIALIZED", "SCORE", "NLI_LABEL"])
     priority_queue = []
     visited = set()  # Use a set to track visited premises for faster lookups
@@ -112,7 +112,8 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, b
         print(concatenated_triples)
 
         # Apply entailment test to all triple neighbors and sort results by entailment score
-        entailment_concatenate_triples_result = test_entailment_api(concatenated_triples, model_nli_name)
+        #entailment_concatenate_triples_result = test_entailment_api(concatenated_triples, model_nli_name)
+        entailment_concatenate_triples_result = test_entailment(concatenated_triples, tokenizer_nli, model_nli_name, model_nli)
         entailment_concatenate_triples_result.sort_values(by="ENTAILMENT", ascending=False, inplace=True)
 
         print("\nENTAILMENT TEST RESULTS (CONCATENATED TRIPLES):")

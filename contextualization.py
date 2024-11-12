@@ -16,13 +16,13 @@ from dotenv import load_dotenv
 import os
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
 import pandas as pd
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import T5ForConditionalGeneration, T5Tokenizer, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
 import torch
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
-from utils import test_entailment_api, triple_sentiment_analysis_api
+from utils import test_entailment, test_sentiment_analysis
 from graph_explorator import graph_explorator_bfs_optimized
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
@@ -34,34 +34,39 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 logging.set_verbosity_error()
 
-load_dotenv()
+#load_dotenv()
 # --- Initialize inference servers
-API_URL_sent = os.environ["API_URL_SENT"]
-API_URL_nli = os.environ["API_URL_NLI"]
-API_TOKEN = os.environ["HF_TOKEN"]
-headers = {
-    "Accept": "application/json",
-    "Authorization": f"Bearer {API_TOKEN}",
-    "Content-Type": "application/json"
-}
+#API_URL_sent = os.environ["API_URL_SENT"]
+#API_URL_nli = os.environ["API_URL_NLI"]
+#API_TOKEN = os.environ["HF_TOKEN"]
+#headers = {
+#    "Accept": "application/json",
+#    "Authorization": f"Bearer {API_TOKEN}",
+#    "Content-Type": "application/json"
+#}
 
-data_sent = {
-    'inputs': {
-        'text': '',
-        'text_pair': ''
-    }
-}
-data_nli = {
-    "inputs": " "
-}
+#data_sent = {
+#    'inputs': {
+#        'text': '',
+#        'text_pair': ''
+#    }
+#}
+#data_nli = {
+#    "inputs": " "
+#}
 
-requests.post(API_URL_nli, headers=headers, json=data_nli)
-requests.post(API_URL_sent, headers=headers, json=data_sent)
+#requests.post(API_URL_nli, headers=headers, json=data_nli)
+#requests.post(API_URL_sent, headers=headers, json=data_sent)
 
 # --- Import models ---
 model_sts = SentenceTransformer('all-mpnet-base-v2')
 
 model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+tokenizer_nli = AutoTokenizer.from_pretrained(model_nli_name)
+model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).to(device)
+
+sentiment_model_path = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, tokenizer=sentiment_model_path, device=device)
 
 model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
 tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
@@ -247,7 +252,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
         # --- Transform negative triples ---  --- Sentiment analysis ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
-            lambda triple: triple_sentiment_analysis_api(triple[0], neutral_predicates=["is a type of"])[0])
+            lambda triple: test_sentiment_analysis(triple[0], sentiment_task, neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []
@@ -278,12 +283,13 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(transformed_anchor_points.to_string())
 
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
-        entailment_result = test_entailment_api(transformed_anchor_points, model_nli_name)
+        entailment_result = test_entailment(transformed_anchor_points, tokenizer_nli, model_nli_name, model_nli)
         print("\nENTAILMENT RESULTS:")
         print(entailment_result.to_string())
 
         # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts, model_nli_name, beam_width, max_depth)
+        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
+                                                             model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth)
 
         # --- ### ---
         #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]

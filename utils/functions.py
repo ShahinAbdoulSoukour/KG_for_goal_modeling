@@ -91,7 +91,6 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
                    The hypothesis for the textual entailment evaluation.
     model_name :   str or os.PathLike
                    Can be either:
-
                        - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
                          Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
                          user or organization name, like `dbmdz/bert-base-german-cased`.
@@ -157,6 +156,40 @@ def detect_entailment_api(premise, hypothesis, model_name, max_length=512, full_
     return dict_predicted_probability
 
 
+
+def triple_sentiment_analysis(triple, sentiment_task, neutral_predicates=None):
+    """
+    Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple.
+
+    Parameters
+    ----------
+    triple :             list[str]
+                            #. A subject
+                            #. A predicate
+                            #. An object
+    sentiment_task :     Pipeline
+                         A Transformers pipeline for sentiment analysis.
+    neutral_predicates : list[str], optional
+                         A list of predicates inducing automatically neutral triples. Predicates from the RDF ontology
+                         (e.g., `rdf:type`) are often relevant for this list.
+
+    Returns
+    -------
+    tuple[str, float]
+        A tuple composed of the most probable sentiment for the triple and its certainty score.
+    """
+    if neutral_predicates is None:
+        neutral_predicates = []
+
+    if triple[1] in neutral_predicates:
+        return "neutral", 1
+
+    sentiment = sentiment_task(" ".join(triple))[0]
+
+    return sentiment["label"], sentiment["score"]
+
+
+
 def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0):
     """
         Predicts the sentiment (either `positive`, `negative` or `neutral`) expressed by a triple through the HuggingFace API.
@@ -165,20 +198,17 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0)
         ----------
         triple :             list[str]
                              A list composed of three strings:
-
                                  #. A subject
                                  #. A predicate
                                  #. An object
-
         neutral_predicates : list[str], optional
                              A list of predicates inducing automatically neutral triples. Predicates from the RDF ontology
                              (e.g., `rdf:type`) are often relevant for this list.
-
         Returns
         -------
         tuple[str, float]
             A tuple composed of the most probable sentiment for the triple and its certainty score.
-        """
+    """
     API_URL = os.environ["API_URL_SENT"]
     API_TOKEN = os.environ["HF_TOKEN"]
     headers = {
@@ -214,9 +244,93 @@ def triple_sentiment_analysis_api(triple, neutral_predicates=None, test_again=0)
     return sentiment["label"], sentiment["score"]
 
 
-def test_entailment_api(df, model_name):
+
+
+def test_sentiment_analysis(triple, sentiment_task=None, neutral_predicates=None):
+    """
+    Function to select API-based or local sentiment analysis for a triple.
+
+    Parameters
+    ----------
+    triple :             list[str]
+                         A list composed of three strings representing the subject, predicate, and object.
+    sentiment_task :     Pipeline, optional
+                         A Hugging Face Transformers pipeline for sentiment analysis (used only for local processing).
+    neutral_predicates : list[str], optional
+                         A list of predicates that automatically assign a neutral sentiment to triples.
+    Returns
+    -------
+    tuple[str, float]
+        A tuple containing the sentiment label and the certainty score.
+    """
+    # Check for API availability
+    api_url = os.getenv("API_URL_SENT")
+    api_token = os.getenv("HF_TOKEN")
+    use_api = bool(api_url and api_token)
+
+    if use_api:
+        print("\nHuggingFace API keys used for sentiment analysis.")
+        # Use API-based sentiment analysis
+        return triple_sentiment_analysis_api(triple, neutral_predicates=neutral_predicates)
+    else:
+        print("\nNo HuggingFace API keys found for sentiment analysis.")
+        # Use local sentiment analysis with the provided pipeline
+        return triple_sentiment_analysis(triple, sentiment_task=sentiment_task, neutral_predicates=neutral_predicates)
+
+
+
+
+
+def test_entailment(df, tokenizer, model_name, model_nli):
+    """
+    Performs NLI on a DataFrame containing pairs of premises and hypotheses, classifying each pair as entailment, neutral, or contradiction.
+    Uses the Hugging Face API if available; otherwise, runs the model locally.
+
+    Parameters
+    ----------
+    df :        pandas.DataFrame
+                A DataFrame containing 'PREMISE' and 'HYPOTHESIS' columns with text data to analyze.
+    tokenizer:  AutoTokenizer, optional
+                The tokenizer instance used for the local NLI model.
+    model_name: str or os.PathLike
+                The name or path of the NLI model on Hugging Face, used by the API function.
+    model_nli : transformers.AutoModelForSequenceClassification
+                The NLI model used when running locally without the API.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The original DataFrame with additional columns:
+         - ENTAILMENT: Score for the entailment classification.
+         - NEUTRAL: Score for the neutral classification.
+         - CONTRADICTION: Score for the contradiction classification.
+         - NLI_LABEL: The predicted label with the highest probability.
+    """
+
+    # safely check the presence of Hugging Face API keys
+    api_token = os.getenv("HF_TOKEN")
+    api_url_nli = os.getenv("API_URL_NLI")
+    use_api = bool(api_url_nli and api_token)
+
     # apply the detect_entailment() function and create two new columns
-    df['ENTAILMENT_SCORES'] = df.apply(lambda row: detect_entailment_api(row['PREMISE'], row['HYPOTHESIS'], model_name, full_results=True), axis=1)
+    #df['ENTAILMENT_SCORES'] = df.apply(lambda row: detect_entailment_api(row['PREMISE'], row['HYPOTHESIS'], model_name, full_results=True), axis=1)
+
+    # Test the entailment
+    if use_api:
+        print("\nHuggingFace API keys used for NLI.")
+        # Use the API-based function
+        df['ENTAILMENT_SCORES'] = df.apply(
+            lambda row: detect_entailment_api(row['PREMISE'], row['HYPOTHESIS'], model_name, full_results=True),
+            axis=1
+        )
+    else:
+        print("\nNo HuggingFace API keys found for NLI.")
+        # Use the local function
+        df['ENTAILMENT_SCORES'] = df.apply(
+            lambda row: detect_entailment(row['PREMISE'], row['HYPOTHESIS'], "",
+                                          tokenizer=tokenizer, model=model_nli, full_results=True),
+            axis=1
+        )
 
     df['ENTAILMENT'] = df.apply(lambda row: row['ENTAILMENT_SCORES']['entailment'], axis=1).round(5)
     df['NEUTRAL'] = df.apply(lambda row: row['ENTAILMENT_SCORES']['neutral'], axis=1).round(5)
@@ -231,6 +345,30 @@ def test_entailment_api(df, model_name):
 
 
 def get_neighbors(triple, triple_serialized, graph):
+    """
+    Retrieves all neighboring triples in a knowledge graph that connect the subject and object of the given triple.
+    Returns a DataFrame containing the original triple and its neighboring triples.
+
+    Parameters
+    ----------
+    triple :            list[str]
+                        The input triple.
+    triple_serialized : list[list[str]]
+                        The serialized form of the input triple, where each element is a list of three strings representing the components
+                        (subject, predicate, object) in serialized format.
+    graph :             rdflib.Graph
+                        The RDFLib graph object to query for neighboring triples.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with the following columns:
+            - TRIPLE_NEIGHBOR: Concatenated string representation of neighboring triples.
+            - TRIPLE_NEIGHBOR_SERIALIZED: Serialized list format of each neighboring triple.
+            - TRIPLE: The original triple.
+            - TRIPLE_SERIALIZED: The serialized form of the original triple.
+
+    """
     subject = triple_serialized[0][0]
     object = triple_serialized[-1][2]
 
