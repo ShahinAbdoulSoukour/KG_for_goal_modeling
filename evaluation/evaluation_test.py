@@ -128,21 +128,6 @@ ax2.set_xlim([7, 17.5])
 ax2.set_ylabel("Number of unique entailing triples", fontsize='large')
 ax2.set_ylim([0, 80])
 
-md_title = Line2D([0], [0], ls="", label='Max depth')
-md_1_lgd = mpatches.Patch(color='r', label='1')
-md_3_lgd = mpatches.Patch(color='g', label='3')
-md_5_lgd = mpatches.Patch(color='b', label='5')
-md_99_lgd = mpatches.Patch(color='k', label='99')
-
-line_skip = Line2D([0], [0], ls="", label="", visible=False)
-
-bw_title = Line2D([0], [0], ls="", label='Beam width')
-bw_1_lgd = Line2D([0], [0], marker="o", ms=8, color='k', ls="", label='1')
-bw_2_lgd = Line2D([0], [0], marker="X", ms=8, color='k', ls="", label='2')
-bw_3_lgd = Line2D([0], [0], marker="s", ms=8, color='k', ls="", label='3')
-bw_5_lgd = Line2D([0], [0], marker="P", ms=8, color='k', ls="", label='5')
-bw_99_lgd = Line2D([0], [0], marker="D", ms=8, color='k', ls="", label='99')
-
 ax2.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large')
 
 plt.tight_layout()
@@ -150,7 +135,7 @@ plt.tight_layout()
 plt.savefig("./nuet_time_tradeoff_local.eps")
 plt.show()
 
-# Execution time vs NUET plot
+# Execution time vs number of leaf goals plot
 fig3, ax3 = plt.subplots()
 plt.grid()
 for idx, row in df.iterrows():
@@ -161,24 +146,25 @@ ax3.set_xlim([7, 17.5])
 ax3.set_ylabel("Number of leaf goals produced", fontsize='large')
 ax3.set_ylim([0, 8])
 
-md_title = Line2D([0], [0], ls="", label='Max depth')
-md_1_lgd = mpatches.Patch(color='r', label='1')
-md_3_lgd = mpatches.Patch(color='g', label='3')
-md_5_lgd = mpatches.Patch(color='b', label='5')
-md_99_lgd = mpatches.Patch(color='k', label='99')
-
-line_skip = Line2D([0], [0], ls="", label="", visible=False)
-
-bw_title = Line2D([0], [0], ls="", label='Beam width')
-bw_1_lgd = Line2D([0], [0], marker="o", ms=8, color='k', ls="", label='1')
-bw_2_lgd = Line2D([0], [0], marker="X", ms=8, color='k', ls="", label='2')
-bw_3_lgd = Line2D([0], [0], marker="s", ms=8, color='k', ls="", label='3')
-bw_5_lgd = Line2D([0], [0], marker="P", ms=8, color='k', ls="", label='5')
-bw_99_lgd = Line2D([0], [0], marker="D", ms=8, color='k', ls="", label='99')
-
 ax3.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large')
 
 plt.tight_layout()
-#plt.savefig("./nuet_time_tradeoff.eps")
 plt.savefig("./nlg_time_tradeoff_local.eps")
+plt.show()
+
+# Execution time vs NUET plot
+fig4, ax4 = plt.subplots()
+plt.grid()
+for idx, row in df.iterrows():
+    ax4.scatter(row["Mean Execution Time (s)"], row["Number of direct or indirect refinements of a goal"], c=colors[row["Max depth"]], marker=markers[row["Beam width"]], s=80)
+
+ax4.set_xlabel("Mean Execution Time (s)", fontsize='large')
+ax4.set_xlim([7, 17.5])
+ax4.set_ylabel("Number of goals produced", fontsize='large')
+ax4.set_ylim([0, 15])
+
+ax4.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large')
+
+plt.tight_layout()
+plt.savefig("./ng_time_tradeoff_local.eps")
 plt.show()
