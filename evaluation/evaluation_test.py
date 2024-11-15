@@ -21,7 +21,7 @@ data = {
     "Number of unique entailing triples": [9, 44, 46, 54, 9, 49, 75, 50],
     "Total entailing triples selected for refinement": [2, 20, 19, 20, 2, 19, 29, 18],
     "Number of direct or indirect refinements of a goal": [1, 11, 10, 11, 1, 10, 14, 10],
-    "Total leaf goals": [1, 5, 4, 5, 1, 4, 7, 4],
+    "Number of leaf goals": [1, 5, 4, 5, 1, 4, 7, 4],
     "Depth of the goal hierarchy": [1, 5, 5, 5, 1, 5, 5, 5],
 }
 
@@ -38,14 +38,14 @@ data = {
 
 
 data_time_execution = {
-    'GoalModel_MD1_BW3': [24.44, 27.32],
-    'GoalModel_MD3_BW1': [23.20, 39.81, 29.57, 25.44, 26.54, 21.64, 35.70, 25.22, 26.34, 15.70, 21.26, 21.58],
-    'GoalModel_MD3_BW5': [22.79, 49.14, 29.41, 27.61, 24.81, 26.86, 43.36, 21.33, 25.98, 17.24, 27.43],
-    'GoalModel_MD5_BW3': [23.40, 48.59, 29.15, 25.46, 24.24, 24.40, 45.24, 37.46, 24.40, 19.75, 21.40, 28.44],
-    'GoalModel_MD1_BW1': [22.46, 25.24],
-    'GoalModel_MD3_BW3': [24.69, 49.99, 30.65, 28.17, 26.09, 25.74, 43.38, 40.36, 24.36, 22.15, 27.87],
-    'GoalModel_MD99_BW99': [25.57, 70.36, 35.82, 31.49, 29.06, 26.11, 30.03, 31.31, 65.14, 21.18, 43.45, 49.68, 37.88, 18.87, 33.28],
-    'GoalModel_MD3_BW2': [23.11, 48.96, 30.26, 25.28, 23.40, 22.60, 42.47, 30.69, 24.76, 22.80, 21.97],
+    'GoalModel_MD1_BW3': [10.65, 10.78],
+    'GoalModel_MD3_BW1': [10.66, 17.97, 13.60, 12.58, 11.81, 10.51, 17.45, 10.48, 11.32, 6.38, 10.23, 9.31],
+    'GoalModel_MD3_BW5': [11.17, 21.30, 13.68, 13.11, 11.28, 12.52, 20.33, 9.81, 12.97, 7.82, 12.20],
+    'GoalModel_MD5_BW3': [10.95, 21.50, 14.37, 12.33, 11.99, 11.31, 20.29, 18.17, 10.43, 9.61, 10.33, 12.76],
+    'GoalModel_MD1_BW1': [10.43, 10.49],
+    'GoalModel_MD3_BW3': [10.79, 20.75, 13.23, 11.79, 11.12, 11.20, 20.68, 18.86, 9.52, 10.37, 12.77],
+    'GoalModel_MD99_BW99': [12.53, 30.37, 15.89, 14.42, 13.18, 12.37, 13.72, 13.95, 27.72, 9.59, 20.34, 30.01, 17.09, 7.98, 14.95],
+    'GoalModel_MD3_BW2': [10.70, 21.69, 14.11, 11.55, 11.61, 10.37, 20.29, 14.41, 10.45, 10.85, 10.08],
 }
 
 
@@ -91,9 +91,9 @@ for idx, row in df.iterrows():
     ax1.scatter(row["Mean Execution Time (s)"], row["Relevance (%)"], c=colors[row["Max depth"]], marker=markers[row["Beam width"]], s=80)
 
 ax1.set_xlabel("Mean Execution Time (s)", fontsize='large')
-ax1.set_xlim([0, 60])
+ax1.set_xlim([7, 17.5])
 ax1.set_ylabel("Relevance (%)", fontsize='large')
-ax1.set_ylim([0, 47])
+ax1.set_ylim([0, 50])
 
 md_title = Line2D([0], [0], ls="", label='Max depth')
 md_1_lgd = mpatches.Patch(color='r', label='1')
@@ -110,7 +110,7 @@ bw_3_lgd = Line2D([0], [0], marker="s", ms=8, color='k', ls="", label='3')
 bw_5_lgd = Line2D([0], [0], marker="P", ms=8, color='k', ls="", label='5')
 bw_99_lgd = Line2D([0], [0], marker="D", ms=8, color='k', ls="", label='99')
 
-ax1.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large', loc='lower right')
+ax1.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large')
 
 plt.tight_layout()
 #plt.savefig("./relevance_time_tradeoff.eps")
@@ -124,7 +124,7 @@ for idx, row in df.iterrows():
     ax2.scatter(row["Mean Execution Time (s)"], row["Number of unique entailing triples"], c=colors[row["Max depth"]], marker=markers[row["Beam width"]], s=80)
 
 ax2.set_xlabel("Mean Execution Time (s)", fontsize='large')
-ax2.set_xlim([0, 60])
+ax2.set_xlim([7, 17.5])
 ax2.set_ylabel("Number of unique entailing triples", fontsize='large')
 ax2.set_ylim([0, 80])
 
@@ -148,4 +148,37 @@ ax2.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip
 plt.tight_layout()
 #plt.savefig("./nuet_time_tradeoff.eps")
 plt.savefig("./nuet_time_tradeoff_local.eps")
+plt.show()
+
+# Execution time vs NUET plot
+fig3, ax3 = plt.subplots()
+plt.grid()
+for idx, row in df.iterrows():
+    ax3.scatter(row["Mean Execution Time (s)"], row["Number of leaf goals"], c=colors[row["Max depth"]], marker=markers[row["Beam width"]], s=80)
+
+ax3.set_xlabel("Mean Execution Time (s)", fontsize='large')
+ax3.set_xlim([7, 17.5])
+ax3.set_ylabel("Number of leaf goals produced", fontsize='large')
+ax3.set_ylim([0, 8])
+
+md_title = Line2D([0], [0], ls="", label='Max depth')
+md_1_lgd = mpatches.Patch(color='r', label='1')
+md_3_lgd = mpatches.Patch(color='g', label='3')
+md_5_lgd = mpatches.Patch(color='b', label='5')
+md_99_lgd = mpatches.Patch(color='k', label='99')
+
+line_skip = Line2D([0], [0], ls="", label="", visible=False)
+
+bw_title = Line2D([0], [0], ls="", label='Beam width')
+bw_1_lgd = Line2D([0], [0], marker="o", ms=8, color='k', ls="", label='1')
+bw_2_lgd = Line2D([0], [0], marker="X", ms=8, color='k', ls="", label='2')
+bw_3_lgd = Line2D([0], [0], marker="s", ms=8, color='k', ls="", label='3')
+bw_5_lgd = Line2D([0], [0], marker="P", ms=8, color='k', ls="", label='5')
+bw_99_lgd = Line2D([0], [0], marker="D", ms=8, color='k', ls="", label='99')
+
+ax3.legend(handles=[md_title, md_1_lgd, md_3_lgd, md_5_lgd, md_99_lgd, line_skip, bw_title, bw_1_lgd, bw_2_lgd, bw_3_lgd, bw_5_lgd, bw_99_lgd], fontsize='large')
+
+plt.tight_layout()
+#plt.savefig("./nuet_time_tradeoff.eps")
+plt.savefig("./nlg_time_tradeoff_local.eps")
 plt.show()
