@@ -1,6 +1,6 @@
 [![python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
 
-# Description
+## Description
 
 This approach optimizes the beam search process by reusing precomputed similarity scores for prioritization, eliminating redundant calculations. 
 It excludes neighbors that have already led to an entailment, focusing only on non-entailed neighbors for further exploration. 
