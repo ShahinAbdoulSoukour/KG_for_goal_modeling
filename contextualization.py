@@ -293,6 +293,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         transformed_anchor_points["SUBJECT"] = anchor_points_df["SUBJECT"].values
         transformed_anchor_points["PREDICATE"] = anchor_points_df["PREDICATE"].values
         transformed_anchor_points["OBJECT"] = anchor_points_df["OBJECT"].values
+        transformed_anchor_points["SIMILARITY_SCORE"] = anchor_points_df["SCORE"].values
 
         # --- Print transformed anchor points ---
         print("\nTRANSFORMED ANCHOR POINTS:")
@@ -305,7 +306,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
         # --- Explore graph to improve contextualization ---
         entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
-                                                             model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth, use_api)
+                                                             model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth,
+                                                             use_api, transformed_anchor_points)
 
         # --- ### ---
         #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
