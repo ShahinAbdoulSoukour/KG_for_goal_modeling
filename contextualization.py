@@ -262,9 +262,14 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(ft)
 
         # --- Extract anchor points ---
-        anchor_points_df = anchor_points_extractor(goal_triples_df, model_sts, ft).copy()
+        anchor_points_df, anchor_points_full_df = anchor_points_extractor(goal_triples_df, model_sts, ft)
+        anchor_points_df = anchor_points_df.copy()
+        anchor_points_full_df = anchor_points_full_df.copy()
         print("\nANCHOR TRIPLES:")
-        print(anchor_points_df)
+        print(anchor_points_df.to_string())
+
+        print("\nANCHOR TRIPLES FULL:")
+        print(anchor_points_full_df.to_string())
 
         # --- Transform negative triples ---  --- Sentiment analysis ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
@@ -307,7 +312,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         # --- Explore graph to improve contextualization ---
         entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
                                                              model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth,
-                                                             use_api, transformed_anchor_points)
+                                                             use_api, anchor_points_full_df)
 
         # --- ### ---
         #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
@@ -378,6 +383,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
             print('\nPROCESSED DATA (G2T):')
             print(processed_data_df.to_string())
+            processed_data_df.to_csv("processed_data.csv")
 
             # Add the goal (as high-level goal) in the database (table: goal)
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)

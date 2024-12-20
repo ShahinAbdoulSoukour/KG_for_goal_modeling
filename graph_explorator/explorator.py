@@ -10,15 +10,15 @@ def hashable_premise_serialized(premise_serialized):
     return premise_serialized
 
 
-def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth, use_api, transformed_anchor_points):
+def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth, use_api, anchor_points_full_df):
     entailed_triples_df = pd.DataFrame(columns=["GOAL_TYPE", "SUBGOALS", "SUBGOALS_SERIALIZED", "SCORE", "NLI_LABEL"])
     priority_queue = []
     visited = set()  # Use a set to track visited premises for faster lookups
 
     # Map from serialized premises to their precomputed similarity scores
     anchor_similarity_map = {
-        hashable_premise_serialized(row["PREMISE_SERIALIZED"]): row["SIMILARITY_SCORE"]
-        for _, row in transformed_anchor_points.iterrows()
+        hashable_premise_serialized(row["TRIPLE_SERIALIZED"]): row["SCORE"]
+        for _, row in anchor_points_full_df.iterrows()
     }
 
     print("\nANCHOR SIMILARITY MAP:")
@@ -116,7 +116,7 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, t
         concatenated_triples = concatenated_triples.head(beam_width).drop("SIMILARITY_SCORE", axis=1)
 
         print("\nTop beam_width Neighbors:")
-        print(concatenated_triples)
+        print(concatenated_triples.to_string())
 
         # Apply entailment test to all triple neighbors and sort results by entailment score
         entailment_concatenate_triples_result = test_entailment(concatenated_triples, tokenizer_nli, model_nli_name, model_nli, use_api)
@@ -166,4 +166,5 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_sts, model_nli_name, t
     # Return sorted results by entailment score
     print("\n=> ENTAILED TRIPLES:")
     print(entailed_triples_df.sort_values(['SCORE'], ascending=[False]).to_string())
+    entailed_triples_df.to_csv("entailed_triples.csv")
     return entailed_triples_df
