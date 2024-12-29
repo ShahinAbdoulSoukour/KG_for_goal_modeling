@@ -56,8 +56,8 @@ eval_dataset = train_test_split["test"]
 # Hyperparameters and configurations for training
 training_args = Seq2SeqTrainingArguments(
     output_dir=f"./scratch/{trainer_name}",         # Directory to save model checkpoints
-    evaluation_strategy="steps",
-    save_strategy="steps",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
     load_best_model_at_end=True,                    # To ensure that the best-performing model (according to metric_for_best_model) is loaded after training
     learning_rate=2e-5,                             # A conservative learning rate
     per_device_train_batch_size=batch_size,         # Training batch size
