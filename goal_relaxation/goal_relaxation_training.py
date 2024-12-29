@@ -7,13 +7,7 @@ import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
 
-if torch.cuda.is_available():
-    device = torch.device('cuda:0')
-elif torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device('cpu')
-
+assert torch.cuda.is_available()
 
 # Load dataset
 dataset = load_dataset("sentence-transformers/sentence-compression")
