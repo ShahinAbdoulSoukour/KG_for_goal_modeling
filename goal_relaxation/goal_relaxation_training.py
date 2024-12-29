@@ -82,6 +82,10 @@ training_args = Seq2SeqTrainingArguments(
 )
 
 
+# to pad sequences dynamically during training, which helps reduce memory usage
+data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+
+
 # Evaluates performance using custom metrics
 def compute_metrics(eval_pred_inputs):
     predictions, labels, inputs = eval_pred_inputs
@@ -129,6 +133,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    data_collator=data_collator,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
 )
