@@ -21,7 +21,7 @@ model_checkpoint = "facebook/bart-large"
 model_name = model_checkpoint.split("/")[-1]
 tokenizer = BartTokenizer.from_pretrained(model_checkpoint)
 model = BartForConditionalGeneration.from_pretrained(model_checkpoint)
-batch_size = 16
+batch_size = 8
 
 df_dataset = pd.DataFrame(dataset["train"][:])
 
