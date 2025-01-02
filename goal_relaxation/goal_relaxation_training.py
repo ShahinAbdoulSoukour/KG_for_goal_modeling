@@ -13,15 +13,15 @@ assert torch.cuda.is_available()
 dataset = load_dataset("sentence-transformers/sentence-compression")
 
 sari_metric = load("sari")
-bleu_metric = load("bleu")
-rouge_metric = load("rouge")
+# bleu_metric = load("bleu")
+# rouge_metric = load("rouge")
 
 # Load model and tokenizer
 model_checkpoint = "facebook/bart-large"
 model_name = model_checkpoint.split("/")[-1]
 tokenizer = BartTokenizer.from_pretrained(model_checkpoint)
 model = BartForConditionalGeneration.from_pretrained(model_checkpoint)
-batch_size = 4
+batch_size = 8
 
 df_dataset = pd.DataFrame(dataset["train"][:])
 
@@ -53,7 +53,7 @@ train_dataset = train_test_split["train"]
 eval_dataset = train_test_split["test"]
 
 
-# Hyperparameters and configurations for training
+# --> Hyperparameters and configurations for training
 training_args = Seq2SeqTrainingArguments(
     output_dir=f"./scratch/{trainer_name}",         # Directory to save model checkpoints
     evaluation_strategy="epoch",
@@ -81,6 +81,47 @@ data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
 
 # Evaluates performance using custom metrics
+# def compute_metrics(eval_pred_inputs):
+#     predictions, labels, inputs = eval_pred_inputs
+#     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+#
+#     # Replace -100 in the labels as we can't decode them.
+#     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+#     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+#     decoded_labels_as_lists = [[decoded_label] for decoded_label in decoded_labels]
+#
+#     inputs = np.where(inputs != -100, inputs, tokenizer.pad_token_id)
+#     decoded_inputs = tokenizer.batch_decode(inputs, skip_special_tokens=True)
+#
+#     # Compute SARI
+#     result = sari_metric.compute(sources=decoded_inputs, predictions=decoded_preds, references=decoded_labels_as_lists)
+#
+#     # Add mean generated length
+#     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
+#     input_lens = [np.count_nonzero(init != tokenizer.pad_token_id) for init in inputs]
+#     result["gen_len"] = np.mean(prediction_lens)
+#
+#     len_ratios = [i / j for i, j in zip(input_lens, prediction_lens)]
+#     lens_reduced_enough = [1 if len_ratio > 4 / 3 else 0 for len_ratio in len_ratios]
+#     mean_len_ratio = np.mean(len_ratios)
+#     mean_lens_reduced_enough = np.mean(lens_reduced_enough)
+#
+#     # Add ROUGE scores
+#     rouge_results = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels)
+#     result["rouge1"] = rouge_results["rouge1"].mid.fmeasure * 100
+#     result["rouge2"] = rouge_results["rouge2"].mid.fmeasure * 100
+#     result["rougeL"] = rouge_results["rougeL"].mid.fmeasure * 100
+#
+#     # Add modified SARI score
+#     result["sari_penalized"] = result["sari"] * mean_lens_reduced_enough
+#     result["mean_len_ratio"] = mean_len_ratio
+#     result["mean_lens_reduced_enough"] = mean_lens_reduced_enough
+#
+#     # Round results for readability
+#     return {k: round(v, 4) for k, v in result.items()}
+
+
+# Evaluates performance using SARI and sari_penalized
 def compute_metrics(eval_pred_inputs):
     predictions, labels, inputs = eval_pred_inputs
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
@@ -99,20 +140,12 @@ def compute_metrics(eval_pred_inputs):
     # Add mean generated length
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
     input_lens = [np.count_nonzero(init != tokenizer.pad_token_id) for init in inputs]
-    result["gen_len"] = np.mean(prediction_lens)
-
     len_ratios = [i / j for i, j in zip(input_lens, prediction_lens)]
     lens_reduced_enough = [1 if len_ratio > 4 / 3 else 0 for len_ratio in len_ratios]
     mean_len_ratio = np.mean(len_ratios)
     mean_lens_reduced_enough = np.mean(lens_reduced_enough)
 
-    # Add ROUGE scores
-    rouge_results = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels)
-    result["rouge1"] = rouge_results["rouge1"].mid.fmeasure * 100
-    result["rouge2"] = rouge_results["rouge2"].mid.fmeasure * 100
-    result["rougeL"] = rouge_results["rougeL"].mid.fmeasure * 100
-
-    # Add modified SARI score
+    # Add penalized SARI score
     result["sari_penalized"] = result["sari"] * mean_lens_reduced_enough
     result["mean_len_ratio"] = mean_len_ratio
     result["mean_lens_reduced_enough"] = mean_lens_reduced_enough
@@ -121,7 +154,7 @@ def compute_metrics(eval_pred_inputs):
     return {k: round(v, 4) for k, v in result.items()}
 
 
-# Define Trainer
+# --> Define Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -158,27 +191,36 @@ with open('template_model_card.md', 'r', encoding="utf-8") as template_file:
 model_card = template.format(
     sari_valid_wikilarge=round(validation_results["eval_sari"], 2),
     sari_test_wikilarge=round(test_results["test_sari"], 2),
-    rouge1_valid_wikilarge=round(validation_results["eval_rouge1"], 2),
-    rouge2_valid_wikilarge=round(validation_results["eval_rouge2"], 2),
-    rougel_valid_wikilarge=round(validation_results["eval_rougel"], 2),
-    rouge1_test_wikilarge=round(test_results["test_rouge1"], 2),
-    rouge2_test_wikilarge=round(test_results["test_rouge2"], 2),
-    rougel_test_wikilarge=round(test_results["test_rougel"], 2),
+    sari_penalized_valid=round(validation_results["eval_sari_penalized"], 2),
+    sari_penalized_test=round(test_results["test_sari_penalized"], 2),
+    # rouge1_valid_wikilarge=round(validation_results["eval_rouge1"], 2),
+    # rouge2_valid_wikilarge=round(validation_results["eval_rouge2"], 2),
+    # rougel_valid_wikilarge=round(validation_results["eval_rougel"], 2),
+    # rouge1_test_wikilarge=round(test_results["test_rouge1"], 2),
+    # rouge2_test_wikilarge=round(test_results["test_rouge2"], 2),
+    # rougel_test_wikilarge=round(test_results["test_rougel"], 2),
 )
 
 with open(f"../{trainer_name}/README.md", "w", encoding="utf-8") as model_card_file:
     model_card_file.write(model_card)
 
 log_history = trainer.state.log_history
-x = sorted(list({log["step"] for log in log_history}))
+#x = sorted(list({log["step"] for log in log_history}))
+
+# Extract epochs, ensuring logs with 'epoch' exist
+x = sorted(list({log["epoch"] for log in log_history if "epoch" in log}))
+
+# Extract losses for training and evaluation, aligned with epochs
 y1 = [log["loss"] if "loss" in log else log["train_loss"] for log in list(filter(lambda log: ("loss" in log) or ("train_loss" in log), log_history))]
 y2 = [log["eval_loss"] for log in list(filter(lambda log: "eval_loss" in log, log_history))]
 
+# Check lengths and truncate if mismatched
 if len(x) < len(y1) or len(x) < len(y2):
     print(f"log_history: {log_history}")
     y1 = y1[:len(x)]
     y2 = y2[:len(x)]
 
+# Plot losses
 fig, ax = plt.subplots()
 ax.plot(x, y1, 'r', label="train_loss")
 ax.plot(x, y2, 'g', label="eval_loss")
@@ -186,5 +228,7 @@ ax.set_xlabel("Step", fontsize='large')
 ax.set_ylabel("Loss", fontsize='large')
 ax.legend()
 plt.tight_layout()
+
+# Save and display the plot
 fig.savefig(f"{trainer_name}_loss.eps", format="eps")
-plt.show()
+#plt.show()
