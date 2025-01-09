@@ -32,6 +32,15 @@ import time
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+
+# Check for available devices
+# if torch.cuda.is_available():
+#     device = torch.device('cuda:0')
+# elif torch.backends.mps.is_available():
+#     device = torch.device("mps")
+# else:
+#     device = torch.device('cpu')
+
 logging.set_verbosity_error()
 
 #load_dotenv()
