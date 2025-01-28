@@ -1,11 +1,16 @@
 import torch
 import pandas as pd
-from transformers import BartForConditionalGeneration, BartTokenizer, Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq
+from transformers import BartForConditionalGeneration, BartTokenizer, Trainer, Seq2SeqTrainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq
 from datasets import load_dataset
 from evaluate import load
 import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
+
+
+print(torch.cuda.is_available())
+
+print(torch.cuda.get_device_name(0))
 
 assert torch.cuda.is_available()
 
@@ -14,7 +19,7 @@ dataset = load_dataset("sentence-transformers/sentence-compression")
 
 sari_metric = load("sari")
 # bleu_metric = load("bleu")
-# rouge_metric = load("rouge")
+rouge_metric = load("rouge")
 
 # Load model and tokenizer
 model_checkpoint = "facebook/bart-large"
@@ -48,16 +53,33 @@ print(tokenized_dataset)
 
 # Splitting the dataset
 #tokenized_dataset = tokenized_dataset.train_test_split(test_size=0.1) # 10% of the data is reserved for evaluation
-train_test_split = tokenized_dataset["train"].train_test_split(test_size=0.1)  # 10% reserved for evaluation
-train_dataset = train_test_split["train"]
-eval_dataset = train_test_split["test"]
+#train_test_split = tokenized_dataset["train"].train_test_split(test_size=0.1)  # 10% reserved for evaluation
+#train_dataset = train_test_split["train"]
+#eval_dataset = train_test_split["test"]
+
+# Splitting the dataset into train, validation, and test
+train_val_split = tokenized_dataset["train"].train_test_split(test_size=0.2)  # 20% for validation + test
+val_test_split = train_val_split["test"].train_test_split(test_size=0.5)     # Split validation + test evenly
+
+train_dataset = train_val_split["train"]  # 80% for training
+val_dataset = val_test_split["train"]     # 10% for validation
+test_dataset = val_test_split["test"]     # 10% for testing
+
+print("Train dataset:", len(train_dataset))
+print("Validation dataset:", len(val_dataset))
+print("Test dataset:", len(test_dataset))
 
 
 # --> Hyperparameters and configurations for training
 training_args = Seq2SeqTrainingArguments(
     output_dir=f"./scratch/{trainer_name}",         # Directory to save model checkpoints
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
+    #evaluation_strategy="epoch",
+    #save_strategy="epoch",
+    evaluation_strategy="steps",
+    eval_steps=500,
+    save_strategy="steps",
+    #device_map="auto",  # Automatically distribute the workload
+    #gradient_accumulation_steps=2,                  # Simulate larger batch size by accumulating gradients
     load_best_model_at_end=True,                    # To ensure that the best-performing model (according to metric_for_best_model) is loaded after training
     learning_rate=2e-5,                             # A conservative learning rate
     per_device_train_batch_size=batch_size,         # Training batch size
@@ -77,7 +99,7 @@ training_args = Seq2SeqTrainingArguments(
 
 
 # to pad sequences dynamically during training, which helps reduce memory usage
-data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+data_collator = DataCollatorForSeq2Seq(tokenizer, model=model, padding=True)
 
 
 # Evaluates performance using custom metrics
@@ -136,6 +158,35 @@ def compute_metrics(eval_pred_inputs):
 
     # Compute SARI
     result = sari_metric.compute(sources=decoded_inputs, predictions=decoded_preds, references=decoded_labels_as_lists)
+    
+    # Add mean generated length
+    #prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
+    #input_lens = [np.count_nonzero(init != tokenizer.pad_token_id) for init in inputs]
+    #len_ratios = [i / j for i, j in zip(input_lens, prediction_lens)]
+    #lens_reduced_enough = [1 if len_ratio > 4 / 3 else 0 for len_ratio in len_ratios]
+    #mean_len_ratio = np.mean(len_ratios)
+    #mean_lens_reduced_enough = np.mean(lens_reduced_enough)
+    #result["gen_len"] = np.mean(prediction_lens)
+
+    #len_ratios = [i / j for i, j in zip(input_lens, prediction_lens)]
+    #lens_reduced_enough = [1 if len_ratio > 4 / 3 else 0 for len_ratio in len_ratios]
+    #mean_len_ratio = np.mean(len_ratios) # Autre possibilité compter le nb de ratios inférieurs à 1.33 et pénaliser le score en fonction
+    #mean_lens_reduced_enough = np.mean(lens_reduced_enough)
+
+
+    # Add ROUGE scores
+    #rouge_results = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels)
+    #result["rouge1"] = rouge_results["rouge1"].mid.fmeasure * 100
+    #result["rouge2"] = rouge_results["rouge2"].mid.fmeasure * 100
+    #result["rougeL"] = rouge_results["rougeL"].mid.fmeasure * 100
+
+    # Add penalized SARI score
+    #result["sari_penalized"] = result["sari"] * mean_lens_reduced_enough
+    #result["mean_len_ratio"] = mean_len_ratio
+    #result["mean_lens_reduced_enough"] = mean_lens_reduced_enough
+
+    # Round results for readability
+    #return {k: round(v, 4) for k, v in result.items()}
 
     # Add mean generated length
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
@@ -144,22 +195,37 @@ def compute_metrics(eval_pred_inputs):
     lens_reduced_enough = [1 if len_ratio > 4 / 3 else 0 for len_ratio in len_ratios]
     mean_len_ratio = np.mean(len_ratios)
     mean_lens_reduced_enough = np.mean(lens_reduced_enough)
+    
+    # Compute ROUGE scores
+    rouge_results = rouge_metric.compute(predictions=decoded_preds, references=decoded_labels)
+    if isinstance(rouge_results["rouge1"], float):  # Handle float values directly
+        result["rouge1"] = rouge_results["rouge1"] * 100
+        result["rouge2"] = rouge_results["rouge2"] * 100
+        result["rougeL"] = rouge_results["rougeL"] * 100
+    else:  # Handle objects with 'mid.fmeasure' attributes
+        result["rouge1"] = rouge_results["rouge1"].mid.fmeasure * 100
+        result["rouge2"] = rouge_results["rouge2"].mid.fmeasure * 100
+        result["rougeL"] = rouge_results["rougeL"].mid.fmeasure * 100
 
     # Add penalized SARI score
     result["sari_penalized"] = result["sari"] * mean_lens_reduced_enough
     result["mean_len_ratio"] = mean_len_ratio
     result["mean_lens_reduced_enough"] = mean_lens_reduced_enough
 
-    # Round results for readability
+    # Add generated length
+    #result["gen_len"] = np.mean(prediction_lens)
+
+    # Round results
     return {k: round(v, 4) for k, v in result.items()}
 
 
 # --> Define Trainer
-trainer = Trainer(
+trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
+    #eval_dataset=eval_dataset,
+    eval_dataset=val_dataset,
     data_collator=data_collator,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
@@ -167,14 +233,17 @@ trainer = Trainer(
 
 # Train the model
 print("Starting training...")
-trainer.train()
+trainer.train(resume_from_checkpoint=f"./scratch/{trainer_name}/checkpoint-29000")
+#trainer.train(resume_from_checkpoint=True)
+#trainer.train()
 
 print("With validation set:")
 validation_results = trainer.evaluate()
 pprint(validation_results)
 
 print("With test set:")
-test_results = trainer.evaluate(eval_dataset=eval_dataset, metric_key_prefix='test')
+#test_results = trainer.evaluate(eval_dataset=eval_dataset, metric_key_prefix='test')
+test_results = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix='test')
 pprint(test_results)
 
 # Save the model
@@ -189,38 +258,56 @@ with open('template_model_card.md', 'r', encoding="utf-8") as template_file:
 
 # Replace placeholders with actual values
 model_card = template.format(
-    sari_valid_wikilarge=round(validation_results["eval_sari"], 2),
-    sari_test_wikilarge=round(test_results["test_sari"], 2),
+    sari_valid=round(validation_results["eval_sari"], 2),
+    sari_test=round(test_results["test_sari"], 2),
     sari_penalized_valid=round(validation_results["eval_sari_penalized"], 2),
     sari_penalized_test=round(test_results["test_sari_penalized"], 2),
-    # rouge1_valid_wikilarge=round(validation_results["eval_rouge1"], 2),
-    # rouge2_valid_wikilarge=round(validation_results["eval_rouge2"], 2),
-    # rougel_valid_wikilarge=round(validation_results["eval_rougel"], 2),
-    # rouge1_test_wikilarge=round(test_results["test_rouge1"], 2),
-    # rouge2_test_wikilarge=round(test_results["test_rouge2"], 2),
-    # rougel_test_wikilarge=round(test_results["test_rougel"], 2),
+    
+    rouge1_valid=round(validation_results["eval_rouge1"], 2),
+    rouge2_valid=round(validation_results["eval_rouge2"], 2),
+    rougel_valid=round(validation_results["eval_rougel"], 2),
+    rouge1_test=round(test_results["test_rouge1"], 2),
+    rouge2_test=round(test_results["test_rouge2"], 2),
+    rougel_test=round(test_results["test_rougel"], 2),
 )
 
-with open(f"../{trainer_name}/README.md", "w", encoding="utf-8") as model_card_file:
+with open(f"./{trainer_name}/README.md", "w", encoding="utf-8") as model_card_file:
     model_card_file.write(model_card)
 
 log_history = trainer.state.log_history
 #x = sorted(list({log["step"] for log in log_history}))
+x = sorted(list({log["step"] for log in log_history if "step" in log}))
 
 # Extract epochs, ensuring logs with 'epoch' exist
-x = sorted(list({log["epoch"] for log in log_history if "epoch" in log}))
+#x = sorted(list({log["epoch"] for log in log_history if "epoch" in log}))
 
 # Extract losses for training and evaluation, aligned with epochs
-y1 = [log["loss"] if "loss" in log else log["train_loss"] for log in list(filter(lambda log: ("loss" in log) or ("train_loss" in log), log_history))]
-y2 = [log["eval_loss"] for log in list(filter(lambda log: "eval_loss" in log, log_history))]
+#y1 = [log["loss"] if "loss" in log else log["train_loss"] for log in list(filter(lambda log: ("loss" in log) or ("train_loss" in log), log_history))]
+#y2 = [log["eval_loss"] for log in list(filter(lambda log: "eval_loss" in log, log_history))]
+y1 = [log.get("loss", log.get("train_loss")) for log in log_history if "loss" in log or "train_loss" in log]
+y2 = [log["eval_loss"] for log in log_history if "eval_loss" in log]
+
 
 # Check lengths and truncate if mismatched
-if len(x) < len(y1) or len(x) < len(y2):
-    print(f"log_history: {log_history}")
-    y1 = y1[:len(x)]
-    y2 = y2[:len(x)]
+#if len(x) < len(y1) or len(x) < len(y2):
+#    print(f"log_history: {log_history}")
+#    y1 = y1[:len(x)]
+#    y2 = y2[:len(x)]
 
 # Plot losses
+#fig, ax = plt.subplots()
+#ax.plot(x, y1, 'r', label="train_loss")
+#ax.plot(x, y2, 'g', label="eval_loss")
+#ax.set_xlabel("Epoch", fontsize='large')
+#ax.set_xlabel("Step", fontsize='large')
+#ax.set_ylabel("Loss", fontsize='large')
+#ax.legend()
+#plt.tight_layout()
+
+# Truncate to match lengths
+min_len = min(len(x), len(y1), len(y2))
+x, y1, y2 = x[:min_len], y1[:min_len], y2[:min_len]
+
 fig, ax = plt.subplots()
 ax.plot(x, y1, 'r', label="train_loss")
 ax.plot(x, y2, 'g', label="eval_loss")
@@ -228,7 +315,6 @@ ax.set_xlabel("Step", fontsize='large')
 ax.set_ylabel("Loss", fontsize='large')
 ax.legend()
 plt.tight_layout()
-
-# Save and display the plot
 fig.savefig(f"{trainer_name}_loss.eps", format="eps")
+
 #plt.show()
