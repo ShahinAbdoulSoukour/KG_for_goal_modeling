@@ -233,7 +233,7 @@ trainer = Seq2SeqTrainer(
 
 # Train the model
 print("Starting training...")
-trainer.train(resume_from_checkpoint=f"./scratch/{trainer_name}/checkpoint-29000")
+trainer.train(resume_from_checkpoint=f"./scratch/{trainer_name}/checkpoint-90000")
 #trainer.train(resume_from_checkpoint=True)
 #trainer.train()
 
@@ -250,6 +250,8 @@ pprint(test_results)
 trainer.save_model(f"./{trainer_name}")
 print("Model training and saving completed.")
 
+print("\nvalidation KEY:")
+print(validation_results.keys())
 
 
 # Load the template
@@ -265,10 +267,10 @@ model_card = template.format(
     
     rouge1_valid=round(validation_results["eval_rouge1"], 2),
     rouge2_valid=round(validation_results["eval_rouge2"], 2),
-    rougel_valid=round(validation_results["eval_rougel"], 2),
+    rougel_valid=round(validation_results["eval_rougeL"], 2),
     rouge1_test=round(test_results["test_rouge1"], 2),
     rouge2_test=round(test_results["test_rouge2"], 2),
-    rougel_test=round(test_results["test_rougel"], 2),
+    rougel_test=round(test_results["test_rougeL"], 2),
 )
 
 with open(f"./{trainer_name}/README.md", "w", encoding="utf-8") as model_card_file:
