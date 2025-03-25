@@ -1,3 +1,7 @@
+"""
+Anchor points extractor
+"""
+
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -8,6 +12,23 @@ def anchor_points_extractor(
     model: SentenceTransformer,
     filtered_out_triples: list[str],
 ) -> pd.DataFrame:
+    """
+    Calculating the cosine similarity between the triple and the formulated goal.
+
+    Parameters
+    ----------
+    goal_triples_df :           pd.DataFrame
+                                DataFrame containing triples and the formulated goal
+    model :                     SentenceTransformer
+                                Transformer model
+    filtered_out_triples :      list[str]
+                                list of selected triples by the user (history of triples)
+
+    Returns
+    -------
+    pd.DataFramegit stat
+    DataFrame containing the similarity scores.
+    """
     goal_triples_df["SCORE"] = goal_triples_df.apply(
         lambda row: pd.Series(
             cosine_similarity(
@@ -19,11 +40,8 @@ def anchor_points_extractor(
         ),
         axis=1,
     )
-    # goal_triples_df.sort_values(by=['SCORE'], inplace=True, ascending=False)
 
     highest_score = goal_triples_df["SCORE"].max()
-
-    # anchor_points_df = goal_triples_df[goal_triples_df['SCORE'] >= highest_score * 0.85]
 
     # set an interval [highest_score * 0.85, highest_score]
     score_interval = [highest_score * 0.85, highest_score]
