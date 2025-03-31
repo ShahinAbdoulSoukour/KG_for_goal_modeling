@@ -93,13 +93,14 @@ trainer = Trainer(
 )
 
 # Train the model
-train_result = trainer.train()
+print("\nStarting training...")
+train_result = trainer.train(resume_from_checkpoint=True)
 eval_results = trainer.evaluate()
 
 # Save the model
 model.save_pretrained("./fine_tuned_roberta")
-tokenizer.save_pretrained("./fine_tuned_roberta")
-
+#tokenizer.save_pretrained("./fine_tuned_roberta")
+print("\nModel training and saving completed.")
 
 # Plot training loss
 def plot_loss():
@@ -122,6 +123,7 @@ def plot_loss():
 
 
 plot_loss()
+print("\nPlots generated.")
 
 # Load and update model card template
 with open("template_model_card.md", "r") as f:
@@ -138,3 +140,5 @@ updated_model_card = template_model_card.format(
 # Save the updated model card
 with open("model_card.md", "w") as f:
     f.write(updated_model_card)
+
+print("\nModel card generated.")
