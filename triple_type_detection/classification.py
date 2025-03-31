@@ -93,7 +93,8 @@ trainer = Trainer(
 
 # Train the model
 print("\nStarting training...")
-train_result = trainer.train(resume_from_checkpoint=True)
+train_result = trainer.train()
+#train_result = trainer.train(resume_from_checkpoint=True)
 eval_results = trainer.evaluate()
 
 # Save the model
