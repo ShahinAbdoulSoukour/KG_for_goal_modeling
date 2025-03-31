@@ -9,7 +9,7 @@
 #SBATCH --mem-per-gpu=100gb                                   # Increase total memory allocated
 ##SBATCH --mem=64gb
 #SBATCH --time=47:59:59
-#SBATCH --output=sentence_compression_%j.out                  # Standard output and error log
+#SBATCH --output=classification_%j.out                  # Standard output and error log
 
 echo "### Running $SLURM_JOB_NAME ###"
 
