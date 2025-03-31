@@ -1,4 +1,3 @@
-import torch
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +6,6 @@ from datasets import Dataset, DatasetDict
 from transformers import RobertaTokenizer, RobertaForSequenceClassification, Trainer, TrainingArguments
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
-import os
 
 # Load dataset
 file_path = "dataset_balanced_90.csv"
@@ -73,6 +71,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
+    learning_rate=2e-5,                             # A conservative learning rate
     num_train_epochs=3,
     weight_decay=0.01,
     logging_dir="./logs",
