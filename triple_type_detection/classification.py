@@ -15,9 +15,15 @@ df = pd.read_csv(file_path)
 label_map = {"ACHIEVE": 0, "MAINTAIN": 1, "AVOID": 2, "CEASE": 3}
 df["label"] = df["goal_type"].map(label_map)
 
-# Train-test split
-train_texts, val_texts, train_labels, val_labels = train_test_split(
-    df[["verb", "context"]].values.tolist(), df["label"].tolist(), test_size=0.2, random_state=42
+# Train-validation-test split
+train_texts, temp_texts, train_labels, temp_labels = train_test_split(
+    df[["verb", "context"]].values.tolist(), df["label"].tolist(),
+    test_size=0.2, random_state=42, stratify=df["label"]
+)
+
+val_texts, test_texts, val_labels, test_labels = train_test_split(
+    temp_texts, temp_labels,
+    test_size=0.5, random_state=42, stratify=temp_labels
 )
 
 # Initialize tokenizer
@@ -34,8 +40,13 @@ datasets = DatasetDict({
     "train": Dataset.from_dict({
         "text": train_texts, "label": train_labels
     }).map(lambda x: tokenize_function(x["text"]), batched=True),
+
     "validation": Dataset.from_dict({
         "text": val_texts, "label": val_labels
+    }).map(lambda x: tokenize_function(x["text"]), batched=True),
+
+    "test": Dataset.from_dict({
+        "text": test_texts, "label": test_labels
     }).map(lambda x: tokenize_function(x["text"]), batched=True)
 })
 
@@ -71,7 +82,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    learning_rate=2e-5,                             # A conservative learning rate
+    learning_rate=2e-5,
     num_train_epochs=3,
     weight_decay=0.01,
     logging_dir="./logs",
@@ -94,13 +105,15 @@ trainer = Trainer(
 # Train the model
 print("\nStarting training...")
 train_result = trainer.train()
-#train_result = trainer.train(resume_from_checkpoint=True)
 eval_results = trainer.evaluate()
 
 # Save the model
 model.save_pretrained("./fine_tuned_roberta")
-#tokenizer.save_pretrained("./fine_tuned_roberta")
 print("\nModel training and saving completed.")
+
+# Evaluate on test set
+test_results = trainer.evaluate(datasets["test"])
+
 
 # Plot training loss
 def plot_loss():
@@ -134,7 +147,11 @@ updated_model_card = template_model_card.format(
     accuracy=eval_results["eval_accuracy"],
     precision=eval_results["eval_precision"],
     recall=eval_results["eval_recall"],
-    f1=eval_results["eval_f1"]
+    f1=eval_results["eval_f1"],
+    test_accuracy=test_results["eval_accuracy"],
+    test_precision=test_results["eval_precision"],
+    test_recall=test_results["eval_recall"],
+    test_f1=test_results["eval_f1"]
 )
 
 # Save the updated model card
