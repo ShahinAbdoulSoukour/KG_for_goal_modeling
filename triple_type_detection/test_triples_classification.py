@@ -4,7 +4,7 @@ from transformers import RobertaTokenizer, RobertaForSequenceClassification
 
 
 # Load the model
-model_path = './fine_tuned_roberta'
+model_path = './roberta-large-goal-type-classification'
 
 tokenizer = RobertaTokenizer.from_pretrained(model_path)
 model = RobertaForSequenceClassification.from_pretrained(model_path)
