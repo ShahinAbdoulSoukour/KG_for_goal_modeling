@@ -12,8 +12,14 @@ The model was trained on a dataset containing verbs and their corresponding cont
 - **Recall**: {recall}
 - **F1-score**: {f1}
 
+## Test Set Performance
+- **Test Accuracy**: {test_accuracy}
+- **Test Precision**: {test_precision}
+- **Test Recall**: {test_recall}
+- **Test F1-score**: {test_f1}
+
 ## Confusion Matrix
 See `confusion_matrix.png` for a visual representation of the model's classification performance.
 
 ## Loss Plot
-See `loss_plot.png` for training and evaluation loss trends over epochs.
+See `loss_plot.png` for training and evaluation loss trends over epochs.    
