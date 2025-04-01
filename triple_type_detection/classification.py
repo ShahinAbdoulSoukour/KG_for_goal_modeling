@@ -7,6 +7,8 @@ from transformers import RobertaTokenizer, RobertaForSequenceClassification, Tra
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 
+trainer_name = "roberta-large-goal-type-classification"
+
 # Load dataset
 file_path = "dataset_balanced_90.csv"
 df = pd.read_csv(file_path)
@@ -27,7 +29,7 @@ val_texts, test_texts, val_labels, test_labels = train_test_split(
 )
 
 # Initialize tokenizer
-tokenizer = RobertaTokenizer.from_pretrained("roberta-large")
+tokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-large")
 
 
 def tokenize_function(examples):
@@ -77,7 +79,7 @@ def compute_metrics(eval_pred):
 
 # Training arguments
 training_args = TrainingArguments(
-    output_dir="./results",
+    output_dir=f"./scratch/{trainer_name}",
     evaluation_strategy="epoch",
     save_strategy="epoch",
     per_device_train_batch_size=8,
@@ -108,8 +110,9 @@ train_result = trainer.train()
 eval_results = trainer.evaluate()
 
 # Save the model
-model.save_pretrained("./fine_tuned_roberta")
-print("\nModel training and saving completed.")
+trainer.save_model(f"./{trainer_name}")
+print("Model training and saving completed.")
+
 
 # Evaluate on test set
 test_results = trainer.evaluate(datasets["test"])
@@ -155,7 +158,7 @@ updated_model_card = template_model_card.format(
 )
 
 # Save the updated model card
-with open("model_card.md", "w") as f:
-    f.write(updated_model_card)
+with open(f"./{trainer_name}/README.md", "w", encoding="utf-8") as model_card_file:
+    model_card_file.write(updated_model_card)
 
 print("\nModel card generated.")
