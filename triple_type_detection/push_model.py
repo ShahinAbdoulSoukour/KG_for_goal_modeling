@@ -2,8 +2,8 @@ from huggingface_hub import HfApi, create_repo, upload_folder
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
 
 # Define the model name and the folder containing the model files
-model_name = "roberta-goal-type-classification"
-model_folder = f"./fine_tuned_roberta"
+model_name = "roberta-large-goal-type-classification"
+model_folder = f"./{model_name}"
 repo_id = f"shahin-as/{model_name}"
 
 # Create the repository on Hugging Face Hub (if not already created)
