@@ -2,9 +2,7 @@
 
 ## Description
 
-This approach optimizes the beam search process by reusing precomputed similarity scores for prioritization, eliminating redundant calculations. 
-It excludes neighbors that have already led to an entailment, focusing only on non-entailed neighbors for further exploration. 
-This ensures efficient graph traversal by prioritizing promising paths based on similarity and entailment scores, reducing unnecessary computations and enhancing overall performance.
+TODO: Update algorithm
 
 ## Installing the dependencies
 
