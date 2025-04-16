@@ -1,5 +1,5 @@
 """
-Anchor points extractor
+Anchor points extractor from the Knowledge Graph
 """
 
 import pandas as pd
@@ -13,7 +13,7 @@ def anchor_points_extractor(
     filtered_out_triples: list[str],
 ) -> pd.DataFrame:
     """
-    Calculating the cosine similarity between the triple and the formulated goal.
+    Calculating the cosine similarity between the triples and the formulated goal by the designer.
 
     Parameters
     ----------
@@ -22,21 +22,26 @@ def anchor_points_extractor(
     model :                     SentenceTransformer
                                 Transformer model
     filtered_out_triples :      list[str]
-                                list of selected triples by the user (history of triples)
+                                list of filtered triples for the subgoal creation (history of selected triples)
 
     Returns
     -------
-    pd.DataFramegit stat
-    DataFrame containing the similarity scores.
+    Two DataFrames containing the anchor points, the formulated goal and the similarity scores.
+    filtered_df:                pd.DataFrame
+                                DataFrame containing the most relevant anchor points - the top candidates triples
+    goal_triples_df:            pd.DataFrame
+                                DataFrame containing all anchor points
     """
+
+    # remove filtered (or selected) triples from the goal_triples_df DataFrame entirely
+    goal_triples_df = goal_triples_df[~goal_triples_df["TRIPLE"].isin(filtered_out_triples)].copy()
+
     goal_triples_df["SCORE"] = goal_triples_df.apply(
         lambda row: pd.Series(
             cosine_similarity(
                 model.encode(row["GOAL"]).reshape(1, -1),  # goal embedding
-                model.encode(row["TRIPLE"]).reshape(1, -1),  # simple triples embedding
-            ).flatten()
-            if not filtered_out_triples or row["TRIPLE"] not in filtered_out_triples
-            else 0
+                model.encode(row["TRIPLE"]).reshape(1, -1),  # triples (as str) embedding
+            ).flatten(),
         ),
         axis=1,
     )
