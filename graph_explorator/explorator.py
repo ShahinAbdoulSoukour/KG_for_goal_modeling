@@ -1,6 +1,6 @@
 import pandas as pd
 
-from utils.functions import get_neighbors, test_entailment
+from utils.functions import get_neighbors, test_entailment, test_sentiment_analysis
 import heapq
 
 # Function to convert lists to tuples, handling nested lists
@@ -11,7 +11,7 @@ def hashable_premise_serialized(premise_serialized):
 
 
 def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nli, model_nli,
-                                   beam_width, max_depth, use_api, anchor_points_full_df):
+                                   beam_width, max_depth, use_api, anchor_points_full_df, sentiment_task):
     entailed_triples_df = pd.DataFrame(columns=["GOAL_TYPE", "SUBGOALS", "SUBGOALS_SERIALIZED", "SCORE", "NLI_LABEL"])
     priority_queue = []
     visited = set()  # Use a set to track visited premises for faster lookups
@@ -134,13 +134,46 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
         )
         valid_neighbors_df = valid_neighbors_df.nlargest(current_beam_width, "SIMILARITY_SCORE")
 
-        # Concatenate neighbors
+        print("\nVALID NEIGHBORS:")
+        print(valid_neighbors_df.to_string())
+
+        # --- Sentiment analysis on neighbor triples ---
+        valid_neighbors_df["SENTIMENT"] = valid_neighbors_df["TRIPLE_NEIGHBOR_SERIALIZED"].apply(
+            lambda triple_neighbors_serialized: test_sentiment_analysis(
+                triple_neighbors_serialized[0],
+                use_api,
+                sentiment_task,
+                neutral_predicates=["is a type of"]
+            )[0]
+        )
+
+        print("\nSentiment analysis results on valid triple neighbors:")
+        print(valid_neighbors_df.to_string())
+
+        # Transform premises based on sentiment
+        valid_neighbors_df["TRANSFORMED_PREMISE"] = valid_neighbors_df.apply(
+            lambda row: "Prevent that " + row["TRIPLE_NEIGHBOR"]
+            if row["SENTIMENT"] == "negative" else row["TRIPLE_NEIGHBOR"],
+            axis=1
+        )
+
+        # Set GOAL_TYPE based on sentiment
+        valid_neighbors_df["GOAL_TYPE"] = valid_neighbors_df["SENTIMENT"].apply(
+            lambda s: "AVOID" if s == "negative" else "ACHIEVE"
+        )
+
+        # Concatenate with current anchor premise
+        valid_neighbors_df["PREMISE_CONCATENATED"] = valid_neighbors_df["TRANSFORMED_PREMISE"] + " / " + str(current_row["PREMISE"])
+
+        # Build final DataFrame
         concatenated_triples = pd.DataFrame({
-            "GOAL_TYPE": current_row["GOAL_TYPE"],
-            "PREMISE": valid_neighbors_df["TRIPLE_NEIGHBOR"].astype(str) + ". " + str(current_row["PREMISE"]),
+            "GOAL_TYPE": valid_neighbors_df["GOAL_TYPE"],
+            "PREMISE": valid_neighbors_df["PREMISE_CONCATENATED"],
             "HYPOTHESIS": goal,
             "PREMISE_SERIALIZED": valid_neighbors_df["TRIPLE_NEIGHBOR_SERIALIZED"].apply(
                 lambda x: x + current_row["PREMISE_SERIALIZED"]
+                if isinstance(current_row["PREMISE_SERIALIZED"], list)
+                else x + [current_row["PREMISE_SERIALIZED"]]
             )
         })
 

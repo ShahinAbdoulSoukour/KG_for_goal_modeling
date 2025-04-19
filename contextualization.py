@@ -119,47 +119,6 @@ def get_db():
 models.Base.metadata.create_all(bind=engine)
 
 
-def get_subgoal_branch_from_triple_filtered(subgoal_id, db: Session):
-    # Initialize the path and the stack
-    path = [] # To store the results
-    stack = [(subgoal_id, [])] # Initialized with the subgoal_id and an empty path
-
-    # For each current_goal_id in the stack, the corresponding Goal is retrieved
-    while stack:
-        current_goal_id, current_path = stack.pop()
-        current_goal = db.query(models.Goal).filter_by(id=current_goal_id).first()
-
-        if current_goal is None:
-            continue
-
-        # Retrieve the filtered triples that created the current goal (--> the subgoal)
-        # from the table: Triple_Filtered
-        filtered_triple_list = []
-        filtered_triples = db.query(models.Triple_Filtered).filter_by(subgoal_id=current_goal_id).all()
-
-        if filtered_triples:
-            for triple in filtered_triples:
-                filtered_triple_list.append({
-                    'high_level_goal_id': triple.high_level_goal_id,
-                    'entailed_triples': triple.get_entailed_triples()
-                })
-
-        # The new path is constructed by prepending the current goal and its filtered triples to the current_path
-        new_path = [(current_goal, filtered_triple_list)] + current_path
-
-        # Updating the path
-        # The path is updated with the new path
-        path = new_path
-
-        # Check for high-level goals
-        # High-level goals for the current goal are retrieved (from the table: Hierarchy), and each high-level goal is added to the stack
-        high_level_goals = db.query(models.Hierarchy).filter_by(subgoal_id=current_goal_id).all()
-        for hlg in high_level_goals:
-            stack.append((hlg.high_level_goal_id, new_path))
-
-    # path --> it contains the subgoal, the filtered triples used to create it, and its high-level goals in the correct order
-    return path
-
 
 def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], beam_width: int, max_depth: int, db: Session) -> Response:
     # get the start time
@@ -204,41 +163,13 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             if not triples_with_ids_df.empty:
                 for row in triples_with_ids_df.itertuples():
                     print(row.filtered_triple)
+                    cleaned_triple = row.filtered_triple.replace("', '", ' ').replace("['", "").replace("']", "")
                     modified_filtered_triples.append({
-                        'high_level_goal_id': row.goal_id,  # High-level goal ID
-                        'triple_filtered_from_hlg': row.filtered_triple.replace("', '", ' ').replace("['", "").replace(
-                            "']", "")
+                        'goal_id': row.goal_id,
+                        'triple_filtered_from_formulated_goal': cleaned_triple
                     })
 
-                modified_filtered_triples_df = pd.DataFrame(modified_filtered_triples)
-
-                subgoal_id = modified_filtered_triples_df.loc[
-                    0, 'high_level_goal_id']  # Replace with the actual subgoal id
-                subgoal_branch = get_subgoal_branch_from_triple_filtered(subgoal_id, db)
-
-                print("\n")
-
-                ###
-                # Iterate through the subgoal_branch and append new rows to modified_filtered_triples
-                for level, (goal, ft) in enumerate(subgoal_branch):
-                    # Ensure ft is a list
-                    if isinstance(ft, str):
-                        ft = [ft]
-
-                    if ft:
-                        for triple_dict in ft:
-                            triple = triple_dict['entailed_triples']
-                            high_level_goal_id = triple_dict['high_level_goal_id']
-
-                            # Check for redundancy before adding
-                            if not any(d['triple_filtered_from_hlg'] == triple and d[
-                                'high_level_goal_id'] == high_level_goal_id for d in modified_filtered_triples):
-                                modified_filtered_triples.append({
-                                    'high_level_goal_id': high_level_goal_id,
-                                    'triple_filtered_from_hlg': triple
-                                })
-
-                # Convert the updated list to a DataFrame
+                # Convert to DataFrame for further processing
                 modified_filtered_triples_df = pd.DataFrame(modified_filtered_triples)
                 print("\nUpdated MODIFIED TRIPLE (STRING TO LIST):")
                 print(modified_filtered_triples_df.to_string())
@@ -266,7 +197,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
         goal_triples_df = pd.DataFrame(data)
 
-        ft = [item['triple_filtered_from_hlg'] for item in modified_filtered_triples]
+        ft = [item['triple_filtered_from_formulated_goal'] for item in modified_filtered_triples]
         print("\nFILTERED TRIPLE(S):")
         print(ft)
 
@@ -274,13 +205,14 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         anchor_points_df, anchor_points_full_df = anchor_points_extractor(goal_triples_df, model_sts, ft)
         anchor_points_df = anchor_points_df.copy()
         anchor_points_full_df = anchor_points_full_df.copy()
+
         print("\nANCHOR TRIPLES:")
         print(anchor_points_df.to_string())
 
         print("\nANCHOR TRIPLES FULL:")
         print(anchor_points_full_df.to_string())
 
-        # --- Transform negative triples ---  --- Sentiment analysis ---
+        # --- Transform negative anchor triples ---  --- Sentiment analysis ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
             lambda triple: test_sentiment_analysis(triple[0], use_api, sentiment_task, neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
@@ -319,9 +251,9 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(entailment_result.to_string())
 
         # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph, model_sts,
+        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph,
                                                              model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth,
-                                                             use_api, anchor_points_full_df)
+                                                             use_api, anchor_points_full_df, sentiment_task)
 
         # --- ### ---
         #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
@@ -415,8 +347,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
                     # Add the filtered triples (selected by the designer for creating subgoals) to the database
                     # (table: filtered_triple)
                     filtered_triple = models.Triple_Filtered(subgoal_id=new_goal.id,
-                                                             high_level_goal_id=row.high_level_goal_id)
-                    filtered_triple.set_entailed_triple(row.triple_filtered_from_hlg)
+                                                             high_level_goal_id=row.goal_id)
+                    filtered_triple.set_entailed_triple(row.triple_filtered_from_formulated_goal)
                     db.add(filtered_triple)
                 db.commit()
                 print("\nSubgoal added in the database!")
