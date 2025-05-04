@@ -120,7 +120,9 @@ models.Base.metadata.create_all(bind=engine)
 
 
 
-def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str], highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str], beam_width: int, max_depth: int, db: Session) -> Response:
+def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str],
+                              highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str],
+                              beam_width: int, max_depth: int, db: Session) -> Response:
     # get the start time
     st = time.time()
 
@@ -141,6 +143,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
     if not goal_with_outputs:
         modified_filtered_triples = []
 
+        print("\n")
         print(filtered_out_triples_with_goal_id)
 
         # If there are some filtered triples, get the high-level goal id and the triples
@@ -148,21 +151,18 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             triples_with_ids = []
             for item in filtered_out_triples_with_goal_id:
                 goal_id, triple = item.split('_', 1)
-                print("goal_id:")
-                print(goal_id)
                 triples_with_ids.append({
                     'goal_id': goal_id,  # High-level goal ID
                     'filtered_triple': triple  # Filtered triples (selected by the designer)
                 })
             triples_with_ids_df = pd.DataFrame(triples_with_ids)  # Add the elements in a dataframe
 
-            print("\nTRIPLES WITH IDS:")
+            print("\nFILTEREED TRIPLES WITH IDS:")
             print(triples_with_ids_df.to_string())
 
             # If the dataframe is not empty
             if not triples_with_ids_df.empty:
                 for row in triples_with_ids_df.itertuples():
-                    print(row.filtered_triple)
                     cleaned_triple = row.filtered_triple.replace("', '", ' ').replace("['", "").replace("']", "")
                     modified_filtered_triples.append({
                         'goal_id': row.goal_id,
@@ -197,6 +197,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
         goal_triples_df = pd.DataFrame(data)
 
+        ###
         ft = [item['triple_filtered_from_formulated_goal'] for item in modified_filtered_triples]
         print("\nFILTERED TRIPLE(S):")
         print(ft)
@@ -253,29 +254,12 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         # --- Explore graph to improve contextualization ---
         entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph,
                                                              model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth,
-                                                             use_api, anchor_points_full_df, sentiment_task)
+                                                             use_api, anchor_points_full_df, sentiment_task, ft)
 
         # --- ### ---
-        #all_triples_entailed = [triple for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist() for triple in triples]
-
-        #print("\nall_triples_entailed")
-        #print(all_triples_entailed)
-
-        all_triples_entailed = []
         unique_triples_entailed = []
 
         if not entailed_triples_df.empty:
-            #all_triples_entailed.append(triples[0] for triples in entailed_triples_df["SUBGOALS_SERIALIZED"].tolist())
-            #print('\nALL ENTAILED TRIPLES:')
-            #print(all_triples_entailed)
-
-            #for triple in all_triples_entailed:
-            #    if (triple not in unique_triples_entailed) and (type(triple) is list):
-            #        unique_triples_entailed.append(triple)
-
-            #print("\nUNIQUE TRIPLES:")
-            #print(unique_triples_entailed)
-
             triples_already_processed = []
             processed_data = []
             triples_to_process_grouped = []
@@ -304,7 +288,10 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             if triples_to_process_grouped:
                 grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
                 if len(grps_of_triples):
-                    predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples], model=model_g2t,
+                    # Reverse the order of triples in each group
+                    # G2T processing on contextualized triples
+                    predictions = g2t_generator([tripls_grp[::-1] for tripls_grp, _ in grps_of_triples],
+                                                model=model_g2t,
                                                 tokenizer=tokenizer_g2t)
                     for i in range(len(triples_to_process_grouped)):
                         if len(triples_to_process_grouped[i][0]) == 1:
