@@ -173,7 +173,7 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
         )
 
         # Concatenate with current anchor premise
-        valid_neighbors_df["PREMISE_CONCATENATED"] = valid_neighbors_df["TRANSFORMED_PREMISE"] + " / " + str(current_row["PREMISE"])
+        valid_neighbors_df["PREMISE_CONCATENATED"] = str(current_row["PREMISE"]) + ". " +  valid_neighbors_df["TRANSFORMED_PREMISE"]
 
         # Build final DataFrame
         concatenated_triples = pd.DataFrame({
@@ -181,9 +181,9 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
             "PREMISE": valid_neighbors_df["PREMISE_CONCATENATED"],
             "HYPOTHESIS": goal,
             "PREMISE_SERIALIZED": valid_neighbors_df["TRIPLE_NEIGHBOR_SERIALIZED"].apply(
-                lambda x: x + current_row["PREMISE_SERIALIZED"]
+                lambda x: current_row["PREMISE_SERIALIZED"] + x
                 if isinstance(current_row["PREMISE_SERIALIZED"], list)
-                else x + [current_row["PREMISE_SERIALIZED"]]
+                else [current_row["PREMISE_SERIALIZED"]] + x
             ),
             "SENTIMENT": valid_neighbors_df["SENTIMENT"]
         })
@@ -214,8 +214,8 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
             print("Length of the premise (triple neighbors + anchor triple):", len(premise_serialized))
 
             if neighbor_row['NLI_LABEL'] == 'ENTAILMENT':
-                n_triple = premise_serialized[0]
-                print("\nThe first element (triple neighbor):", n_triple)
+                n_triple = premise_serialized[-1]
+                print("\nThe last element (triple neighbor):", n_triple)
 
                 # generate all subsets containing the new triple neighbor
                 all_subsets = [list(combo) for i in range(1, len(premise_serialized) + 1)
