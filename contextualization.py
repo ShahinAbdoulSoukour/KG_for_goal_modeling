@@ -288,9 +288,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
             if triples_to_process_grouped:
                 grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
                 if len(grps_of_triples):
-                    # Reverse the order of triples in each group
                     # G2T processing on contextualized triples
-                    predictions = g2t_generator([tripls_grp[::-1] for tripls_grp, _ in grps_of_triples],
+                    predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples],
                                                 model=model_g2t,
                                                 tokenizer=tokenizer_g2t)
                     for i in range(len(triples_to_process_grouped)):
