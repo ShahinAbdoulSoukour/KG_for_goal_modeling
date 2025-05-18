@@ -1,25 +1,25 @@
+"""
+    Identify relevant information from the knowledge graph based on the formulated goal by the designer
+"""
+import os
+import time
+from typing import List, Optional
+import torch
 import requests
+import pandas as pd
 from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi import APIRouter
-
-from typing import List, Optional
-
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import RedirectResponse, Response
-
-from database import SessionLocal, engine
-import models
+from transformers import (T5ForConditionalGeneration, T5Tokenizer,
+                          AutoTokenizer, AutoModelForSequenceClassification, pipeline)
 from dotenv import load_dotenv
-
-import os
-os.environ['HF_HOME'] = os.getcwd() + "/cache/"
-import pandas as pd
-from transformers import T5ForConditionalGeneration, T5Tokenizer, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
-import torch
+import models
+from database import SessionLocal, engine
 from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import test_entailment, test_sentiment_analysis
@@ -27,8 +27,8 @@ from graph_explorator import graph_explorator_bfs_optimized
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
 
-import time
 
+os.environ['HF_HOME'] = os.getcwd() + "/cache/"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -43,7 +43,6 @@ device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('
 
 logging.set_verbosity_error()
 
-#load_dotenv()
 # --- Initialize inference servers
 #API_URL_sent = os.environ["API_URL_SENT"]
 #API_URL_nli = os.environ["API_URL_NLI"]
@@ -63,34 +62,36 @@ logging.set_verbosity_error()
 #data_nli = {
 #    "inputs": " "
 #}
-
 #requests.post(API_URL_nli, headers=headers, json=data_nli)
 #requests.post(API_URL_sent, headers=headers, json=data_sent)
 
-load_dotenv()
 # Check for Hugging Face API availability
+load_dotenv()
 api_token = os.getenv("HF_TOKEN")
 api_url_sent = os.getenv("API_URL_SENT")
 api_url_nli = os.getenv("API_URL_NLI")
 use_api = bool((api_url_sent or api_url_nli) and api_token)
+BEAM_WIDTH = int(os.getenv("BEAM_WIDTH", 5))
+MAX_DEPTH = int(os.getenv("MAX_DEPTH", 3))
 
 
 # --- Import models ---
 if use_api:
     print("\n--> HuggingFace API keys found to perform NLI and sentiment analysis.")
-    model_nli_name = None
-    tokenizer_nli = None
-    model_nli = None
-    sentiment_model_path = None
-    sentiment_task = None
+    MODEL_NLI_NAME = None
+    TOKENIZER_NLI = None
+    MODEL_NLI = None
+    SENTIMENT_MODEL_PATH = None
+    SENTIMENT_TASK = None
 else:
     print("\n--> No HuggingFace API key was found.")
-    model_nli_name = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
-    tokenizer_nli = AutoTokenizer.from_pretrained(model_nli_name)
-    model_nli = AutoModelForSequenceClassification.from_pretrained(model_nli_name).to(device)
+    MODEL_NLI_NAME = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+    TOKENIZER_NLI = AutoTokenizer.from_pretrained(MODEL_NLI_NAME)
+    MODEL_NLI = AutoModelForSequenceClassification.from_pretrained(MODEL_NLI_NAME).to(device)
 
-    sentiment_model_path = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-    sentiment_task = pipeline("sentiment-analysis", model=sentiment_model_path, tokenizer=sentiment_model_path, device=device)
+    SENTIMENT_MODEL_PATH = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+    SENTIMENT_TASK = pipeline("sentiment-analysis", model=SENTIMENT_MODEL_PATH,
+                              tokenizer=SENTIMENT_MODEL_PATH, device=device)
 
 model_sts = SentenceTransformer('all-mpnet-base-v2')
 model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
@@ -121,8 +122,49 @@ models.Base.metadata.create_all(bind=engine)
 
 
 def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str],
-                              highlevelgoal: str, hlg_id: int, filtered_out_triples_with_goal_id: List[str],
-                              beam_width: int, max_depth: int, db: Session) -> Response:
+                              highlevelgoal: str, hlg_id: int,
+                              filtered_out_triples_with_goal_id: List[str],
+                              beam_width: int,
+                              max_depth: int,
+                              db: Session) -> Response:
+    """
+    Identifies relevant information from a knowledge graph based on a designer-defined high-level goal.
+
+    This function is the core of the goal contextualization pipeline. It processes a designer-defined goal by:
+    - Validating whether the goal already exists in the database
+    - Extracting triples from the knowledge graph
+    - Applying sentiment analysis and natural language inference (NLI)
+    - Exploring the graph using beam search (BFS)
+    - Generating natural language descriptions from contextualized triples (concatenated triples)
+    - Persisting results into a relational database (Goals, Outputs, Hierarchy, Filtered Triples, etc.)
+
+    Parameters
+    ----------
+    request:        Request
+                    The incoming HTTP request object.
+    goal_type:      str
+                    The goal type (e.g., "ACHIEVE", "AVOID").
+    refinement:     Optional[str]
+                    To link a subgoal to a parent goal (refinement link).
+    highlevelgoal:  str
+                    Goal formulated by the designer.
+    hlg_id:         int
+                    ID of the parent goal (used to maintain goal-subgoal hierarchy).
+    filtered_out_triples_with_goal_id:  List[str]
+                                        Triples filtered by the designer, combined with their goal IDs (formatted as `<goal_id>_<triple>`).
+                                        List of triples to be excluded from the exploration process.
+    beam_width:     int
+                    Width of the beam search used during graph exploration.
+    max_depth:      int
+                    Maximum search depth allowed for graph exploration.
+    db:             Session
+                    SQLAlchemy database session for interacting with persistent storage.
+
+    Returns
+    -------
+        A rendered HTML response showing entailing (contextualized) triples or a redirect if the goal already exists.
+    """
+
     # get the start time
     st = time.time()
 
@@ -215,7 +257,7 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
         # --- Transform negative anchor triples ---  --- Sentiment analysis ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
-            lambda triple: test_sentiment_analysis(triple[0], use_api, sentiment_task, neutral_predicates=["is a type of"])[0])
+            lambda triple: test_sentiment_analysis(triple[0], use_api, SENTIMENT_TASK, neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
 
         transformed_triples_premise = []
@@ -247,14 +289,14 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
         print(transformed_anchor_points.to_string())
 
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
-        entailment_result = test_entailment(transformed_anchor_points, tokenizer_nli, model_nli_name, model_nli, use_api)
+        entailment_result = test_entailment(transformed_anchor_points, TOKENIZER_NLI, MODEL_NLI_NAME, MODEL_NLI, use_api)
         print("\nENTAILMENT RESULTS:")
         print(entailment_result.to_string())
 
         # --- Explore graph to improve contextualization ---
         entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph,
-                                                             model_nli_name, tokenizer_nli, model_nli, beam_width, max_depth,
-                                                             use_api, anchor_points_full_df, sentiment_task, ft)
+                                                             MODEL_NLI_NAME, TOKENIZER_NLI, MODEL_NLI, beam_width, max_depth,
+                                                             use_api, anchor_points_full_df, SENTIMENT_TASK, ft)
 
         # --- ### ---
         unique_triples_entailed = []
@@ -438,12 +480,47 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
 
 @router.get("/")
 async def contextualization(request: Request, db: Session = Depends(get_db)):
+    """
+    Renders the main page with a list of all stored high-level goals.
+
+    This route serves the entry point for the designer to start to explore the knowledge graph.
+    It fetches all goals from the database and populates the input form with existing goal names for autocompletion or selection.
+
+    Parameters
+    ----------
+    request: Request
+             The incoming HTTP request object.
+    db:      Session, optional
+             SQLAlchemy database session dependency (injected via FastAPI Depends).
+
+    Returns
+    -------
+        Rendered HTML page containing the goal input form and available goals.
+    """
     all_goal = db.query(models.Goal).all()
     return templates.TemplateResponse('contextualization.html', context={'request': request, 'all_goal': all_goal})
 
 
 @router.get("/contextualization/{hlg_id}")
 async def contextualization(request: Request, hlg_id: int, db: Session = Depends(get_db)):
+    """
+    Displays the results for a given high-level goal.
+
+    Parameters
+    ----------
+    request:    Request
+                The incoming HTTP request object.
+    hlg_id:     int
+                The ID of the high-level goal whose the results are to be displayed.
+    db:         Session, optional
+                SQLAlchemy database session dependency (injected via FastAPI Depends).
+
+    Returns
+    -------
+        Rendered HTML page showing outputs for the specified goal,
+        including entailed triples, generated text, and relevant metadata.
+        Redirects to the main page if the goal is not found.
+    """
     all_goal = db.query(models.Goal).all()
 
     goal_with_outputs = db.query(models.Goal).filter(models.Goal.id == hlg_id).first()
@@ -483,7 +560,45 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
 
 @router.post("/")
-async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None), highlevelgoal: str = Form(...), hlg_id: int = Form(...), filtered_out_triples_with_goal_id: List[str] = Form([]), beam_width: int = Form(...), max_depth: int = Form(...), db: Session = Depends(get_db)):
+async def contextualization(request: Request, goal_type: str = Form(...), refinement: Optional[str] = Form(None),
+                            highlevelgoal: str = Form(...), hlg_id: int = Form(...),
+                            filtered_out_triples_with_goal_id: List[str] = Form([]),
+                            db: Session = Depends(get_db)):
+    """
+
+    Handles form submission and initiates information retrieval.
+    This route processes designer-submitted parameters for a given high-level goal.
+    It triggers a background process (executed in a separate thread) that performs exploration.
+
+    Parameters
+    ----------
+    request:        Request
+                    The incoming HTTP request.
+    goal_type:      str
+                    The selected goal type used (e.g., "ACHIEVE", "AVOID").
+    refinement:     Optional[str]
+                    To link a subgoal to a parent goal (refinement link).
+    highlevelgoal:  str
+                    Goal formulated by the designer.
+    hlg_id:         int
+                    The ID of the high-level goal.
+    filtered_out_triples_with_goal_id:  List[str]
+                                        Triples filtered by the designer, combined with their goal IDs (formatted as `<goal_id>_<triple>`).
+                                        List of triple identifiers to be excluded from the exploration process.
+    db:             Session
+                    SQLAlchemy database session (injected dependency).
+
+    Returns
+    -------
+            A FastAPI response object returned by the `find_relevant_information` function,
+            typically a rendered HTML template or redirect depending on the processing logic.
+    """
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
-    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type, refinement, highlevelgoal, hlg_id, filtered_out_triples_with_goal_id, beam_width, max_depth, db))
+    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type,
+                                                                         refinement, highlevelgoal,
+                                                                         hlg_id,
+                                                                         filtered_out_triples_with_goal_id,
+                                                                         BEAM_WIDTH,
+                                                                         MAX_DEPTH,
+                                                                         db))
     return response
