@@ -74,14 +74,6 @@
                 </select>
             </div>
             {% endif %}
-            <div class="input-group-prepend">
-                <!-- Max depth -->
-                <input min="0" max="10" style="width: 8rem;" type="number" class="form-control" placeholder="Max depth" name="max_depth" id="input-max_depth" data-toggle="tooltip" title="Maximum depth of exploration" required>
-            </div>
-            <div class="input-group-prepend">
-                <!-- Beam width -->
-                <input min="0" max="50" style="width: 13.5rem;" type="number" class="form-control" placeholder="Num. of triple neigbors" name="beam_width" id="input-beam_width" data-toggle="tooltip" title="Maximum number of neighbors to explore at each step" required>
-            </div>
             <!-- Input - High-level goal -->
             <input type="text" class="form-control" placeholder="{% if highlevelgoal is defined %}Enter the subgoal{% else %}Enter the high-level goal{% endif %}" name="highlevelgoal" id="input-datalist" list="list-goal" required>
             <datalist id="list-goal">
@@ -180,7 +172,9 @@
                     {% for idx, row in outputs.iterrows() %} <!-- outputs -->
                     <tr>
                         <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
+                        {% if with_generated_texts %}
                         <td data-name="generated_text" class="generated_text prevent-select">{{ row['generated_text'] }}</td>
+                        {% endif %}
                         <td>
                             {% for t in row['entailed_triple'] %}
                             <div class="form-check">
@@ -224,14 +218,8 @@
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
-        $("#input-beam_width").on("input", function() {
-            $(this).css("background-color", "#ffffff")
-        })
-        $("#input-max_depth").on("input", function() {
-            $(this).css("background-color", "#ffffff")
-        })
         $("#okBtn").click(function() {
-            if ($("#input-datalist").val() && $("#goal_type").val() && $("#input-max_depth").val() && $("#input-beam_width").val() && ($("#refinement").val() || !$("#refinement").length)) {
+            if ($("#input-datalist").val() && $("#goal_type").val() && ($("#refinement").val() || !$("#refinement").length)) {
                 if ($("#data_triples td").hasClass("dataTables_empty") ||
                     !$("#data_triples").length ||
                     $('input[name="filtered_out_triples_with_goal_id"]:checkbox:checked').length) {
@@ -260,14 +248,6 @@
                 if (!$("#refinement").val() && $("#refinement").length) {
                     $("#refinement").removeClass("text-black-50 bg-light")
                     $("#refinement").css("background-color", "#ffda69")
-                }
-                if (!$("#input-beam_width").val() && $("#input-beam_width").length) {
-                    $("#input-beam_width").removeClass("text-black-50 bg-light")
-                    $("#input-beam_width").css("background-color", "#ffda69")
-                }
-                if (!$("#input-max_depth").val() && $("#input-max_depth").length) {
-                    $("#input-max_depth").removeClass("text-black-50 bg-light")
-                    $("#input-max_depth").css("background-color", "#ffda69")
                 }
             }
         });
