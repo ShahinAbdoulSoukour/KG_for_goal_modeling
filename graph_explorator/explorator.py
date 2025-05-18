@@ -236,7 +236,8 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
 
                     print("\nSubset hashed (the first element):")
                     print(subset_hashed)
-                    print(hashable_premise_serialized(e_serialized))
+                    #print(e_serialized)
+                    #print(hashable_premise_serialized(e_serialized))
 
                     already_entailed = any(
                         hashable_premise_serialized(e_serialized) == subset_hashed
