@@ -91,16 +91,90 @@
             <input type="hidden" name="hlg_id" value="-1">
             {%endif%}
         </div>
-        <p class="alert alert-info" role="alert"><strong>Reminder</strong>: A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").</p>
+        <!-- <p class="alert alert-info" role="alert">
+            <strong>Reminder</strong>:<br>
+            A goal should start with an action verb and must be composed of a single sentence with a small number of clauses (e.g., "Anticipate the impact of floods on people").
+            Creating goals from ACHIEVE facts, you can remove the subject, like: Flood warning system, Recommends, Evacuation of residents - Recommend the evacuation of residents
+            To create a goal from an AVOID fact, you can take into account the entire fact, like: Flood, Causes, Loss of life - Prevent flood from causing loss of life
+            From combining facts, if you choose two facts, Flood warning system, Recommends, Evacuation of residents and Flood, Causes, Loss of life - To prevent loss of life caused by flood, recommend evacuation of residents
+        </p> -->
+        <div class="accordion" id="accordionExample">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingThree">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                Guidelines for formulating goals 💡
+              </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse alert-info" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+              <div class="accordion-body">
+                  <ol>
+                      <li><strong>Structure:</strong>
+                        <ol type="a">
+                          <li>Start with an <strong>action verb</strong>.</li>
+                          <li>Keep the goal as a <strong>single, concise sentence</strong> with minimal clauses.</li>
+                          <li><u>Example</u>: <em>"Anticipate the impact of floods on people"</em></li>
+                        </ol>
+                      </li>
+
+                      <li><strong>Creating Goals from ACHIEVE Facts:</strong>
+                        <ol type="a">
+                          <li>Remove the subject and rephrase the fact as an action.</li>
+                          <li><u>Example</u>:
+                            <ul>
+                              <li>Fact: <em>"Flood warning system Recommends Evacuation of residents"</em></li>
+                              <li>Goal: <em>"Recommend the evacuation of residents"</em></li>
+                            </ul>
+                          </li>
+                        </ol>
+                      </li>
+
+                      <li><strong>Creating Goals from AVOID Facts:</strong>
+                        <ol type="a">
+                          <li>Use the entire fact to frame a preventive action.</li>
+                          <li><u>Example</u>:
+                            <ul>
+                              <li>Fact: <em>"Flood Causes Loss of life"</em></li>
+                              <li>Goal: <em>"Prevent floods from causing loss of life"</em></li>
+                            </ul>
+                          </li>
+                        </ol>
+                      </li>
+
+                      <li><strong>Combining Multiple Facts into a Goal:</strong>
+                        <ol type="a">
+                          <li>Integrate related facts into a single, coherent objective.</li>
+                          <li><u>Example</u>:
+                            <ul>
+                              <li>Facts:
+                                <ul>
+                                  <li><em>"Flood warning system Recommends Evacuation of residents"</em></li>
+                                  <li><em>"Flood Causes Loss of life"</em></li>
+                                </ul>
+                              </li>
+                              <li>Combined Goal: <em>"To prevent loss of life caused by floods, recommend evacuation of residents"</em></li>
+                            </ul>
+                          </li>
+                        </ol>
+                      </li>
+
+                      <li><strong>Goal relaxation:</strong>
+                        <ol type="a">
+                          <li>If the tool doesn't provide any information, you can relax the goal by removing parts that make the goal more specific.</li>
+                          <li><u>Example</u>:
+                            <ul>
+                                <li><em>"Anticipate the impact of floods on people"</em> --> <em>"Anticipate the impact of floods"</em></li>
+                            </ul>
+                          </li>
+                        </ol>
+                      </li>
+                  </ol>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {% if not goal_with_outputs %} <!-- -->
             {% if unique_triples_entailed is defined %}
-            <div class="container">
-              <div class="row">
-                  <div class="col">Max depth: <b>{{ max_depth }}</b></div>
-                  <div class="col">Number of triple neighbors: <b>{{ beam_width }}</b></div>
-              </div>
-            </div>
             <br>
             <!-- Entailed triples -->
             <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
@@ -136,12 +210,6 @@
             </form>
             {% else %}
                 {% if message is defined %}
-                    <div class="container">
-                      <div class="row">
-                          <div class="col">Max depth: <b>{{ max_depth }}</b></div>
-                          <div class="col">Number of triple neighbors: <b>{{ beam_width }}</b></div>
-                      </div>
-                    </div>
                     <br>
                     <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
                         No relevant information has been identified!
@@ -149,12 +217,6 @@
                 {% endif %}
             {% endif %}
         {% else %}
-            <div class="container">
-              <div class="row">
-                  <div class="col">Max depth: <b>{{ params.max_depth }}</b></div>
-                  <div class="col">Number of triple neighbors: <b>{{ params.beam_width }}</b></div>
-              </div>
-            </div>
             <br>
             <!-- Entailed triples -->
             {% if outputs|length > 0 %}
