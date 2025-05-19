@@ -100,7 +100,7 @@ tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 
 # --- Import the Knowledge Graph (KG) ---
 # TODO: upload a knowledge graph (RDF file)
-domain_graph = graph_extender("./flooding_graph_V2.rdf")
+domain_graph = graph_extender("./flooding_graph_V3.rdf")
 
 
 # Templates (Jinja2)
