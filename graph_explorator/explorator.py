@@ -261,7 +261,7 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
                     # subset_premise = " / ".join([" ".join(tr) for tr in subset])
 
                     # Create concatenated string of the transformed subset
-                    subset_premise = " / ".join(transformed_subset)
+                    subset_premise = ". ".join(transformed_subset)
 
                     print("\nSubset transformed into string:")
                     print(subset_premise)
