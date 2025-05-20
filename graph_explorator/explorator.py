@@ -18,7 +18,7 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
     visited = set()  # Use a set to track visited premises for faster lookups
 
     # Buffer
-    entailed_subsets_buffer = set()
+    ##entailed_subsets_buffer = set()
 
     # Map from serialized premises to their precomputed similarity scores
     anchor_similarity_map = {
@@ -207,20 +207,28 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
         previous_entailment_score = current_entailment
 
         for _, neighbor_row in top_k_neighbors.iterrows():
-            new_entailment = neighbor_row["ENTAILMENT"]
-            premise_serialized = neighbor_row["PREMISE_SERIALIZED"]
+            if neighbor_row["NLI_LABEL"] == "ENTAILMENT":
+                triple_strs = [s.strip() for s in neighbor_row["PREMISE"].split(".") if s.strip()]
+                print("\ntriples_strs:")
+                print(triple_strs)
 
-            print("\nPremise serialized:", premise_serialized)
-            print("Length of the premise (triple neighbors + anchor triple):", len(premise_serialized))
+                last_triple = triple_strs[-1]
+                print("\nlast triple:")
+                print(last_triple)
 
-            if neighbor_row['NLI_LABEL'] == 'ENTAILMENT':
-                n_triple = premise_serialized[-1]
-                print("\nThe last element (triple neighbor):", n_triple)
+                # Get the corresponding serialized triples
+                serialized_triples = neighbor_row["PREMISE_SERIALIZED"]
+                print("\nSerialized triples:")
+                print(serialized_triples)
 
-                # generate all subsets containing the new triple neighbor
-                all_subsets = [list(combo) for i in range(1, len(premise_serialized) + 1)
-                               for combo in combinations(premise_serialized, i)
-                               if n_triple in combo]
+                # Create a mapping between string triples and their serialized versions
+                triple_to_serialized = dict(zip(triple_strs, serialized_triples))
+
+                all_subsets = [
+                    list(combo) for i in range(1, len(triple_strs) + 1)
+                    for combo in combinations(triple_strs, i)
+                    if last_triple in combo
+                ]
 
                 print("\nALL SUBSETS (combination):")
                 print(all_subsets)
@@ -228,65 +236,38 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
                 minimal_found = False
 
                 for subset in sorted(all_subsets, key=len):
-                    subset_hashed = hashable_premise_serialized(subset)
+                    print("\nSubset:")
+                    print(subset)
 
-                    if subset_hashed in entailed_subsets_buffer:
-                        print("\nSubset already in entailment buffer, skipping:", subset_hashed)
-                        continue
-
-                    print("\nSubset hashed (the first element):")
-                    print(subset_hashed)
-                    #print(e_serialized)
-                    #print(hashable_premise_serialized(e_serialized))
-
-                    already_entailed = any(
-                        hashable_premise_serialized(e_serialized) == subset_hashed
-                        for e_serialized in entailed_triples_df["SUBGOALS_SERIALIZED"]
-                    )
-
-                    if already_entailed:
-                        print("\nTriple already entailed!")
-                        print(subset_hashed)
-                        continue
-
-                    # Apply the same sentiment-based transformation inline
-                    transformed_subset = []
-                    for tr in subset:
-                        triple_str = " ".join(tr)
-                        if neighbor_row["SENTIMENT"] == "negative":
-                            transformed_subset.append(f"Prevent that {triple_str}")
-                        else:
-                            transformed_subset.append(triple_str)
-
-                    # subset_premise = " / ".join([" ".join(tr) for tr in subset])
-
-                    # Create concatenated string of the transformed subset
-                    subset_premise = ". ".join(transformed_subset)
-
-                    print("\nSubset transformed into string:")
+                    subset_premise = ". ".join(subset)
+                    print("\nSubset string (already transformed):")
                     print(subset_premise)
+
+                    if subset_premise in entailment_concatenate_triples_result["PREMISE"].values:
+                        continue
+
+                    # Get the corresponding serialized subset
+                    subset_serialized = [triple_to_serialized[triple] for triple in subset]
 
                     subset_df = pd.DataFrame({
                         "GOAL_TYPE": [neighbor_row["GOAL_TYPE"]],
                         "PREMISE": [subset_premise],
                         "HYPOTHESIS": [goal],
-                        "PREMISE_SERIALIZED": [subset]
+                        "PREMISE_SERIALIZED": [subset_serialized]
                     })
 
-                    # Test entailment between subset and the goal
                     subset_result = test_entailment(subset_df, tokenizer_nli, model_nli_name, model_nli, use_api)
                     print("\nSUBSET ENTAILMENT RESULT:")
                     print(subset_result.to_string())
 
                     if subset_result.iloc[0]["NLI_LABEL"] == "ENTAILMENT":
                         print("\nMinimal entailment found!")
-                        entailed_subsets_buffer.add(subset_hashed)
                         entailed_triples_df = pd.concat([
                             entailed_triples_df,
                             pd.DataFrame({
                                 "GOAL_TYPE": [neighbor_row["GOAL_TYPE"]],
                                 "SUBGOALS": [subset_premise],
-                                "SUBGOALS_SERIALIZED": [subset],
+                                "SUBGOALS_SERIALIZED": [subset_serialized],
                                 "SCORE": [subset_result.iloc[0]["ENTAILMENT"]],
                                 "NLI_LABEL": ["ENTAILMENT"]
                             })
@@ -304,19 +285,18 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
                             "GOAL_TYPE": [neighbor_row["GOAL_TYPE"]],
                             "SUBGOALS": [neighbor_row["PREMISE"]],
                             "SUBGOALS_SERIALIZED": [neighbor_row["PREMISE_SERIALIZED"]],
-                            "SCORE": [new_entailment],
+                            "SCORE": [neighbor_row["ENTAILMENT"]],
                             "NLI_LABEL": ["ENTAILMENT"]
                         })
                     ])
                     found_entailment = True
                 break
-            elif new_entailment > previous_entailment_score:
-                heapq.heappush(priority_queue, (-new_entailment, idx, neighbor_row.to_dict(), depth + 1))
-                previous_entailment_score = new_entailment
+            elif neighbor_row["ENTAILMENT"] > previous_entailment_score:
+                heapq.heappush(priority_queue, (-neighbor_row["ENTAILMENT"], _, neighbor_row.to_dict(), depth + 1))
+                previous_entailment_score = neighbor_row["ENTAILMENT"]
             else:
                 break
 
-        # If we found an entailment, move on to the next anchor triple
         if found_entailment:
             continue
 
