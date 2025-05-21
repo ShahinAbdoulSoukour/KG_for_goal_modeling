@@ -35,9 +35,19 @@
 
 {% if hierarchy_data %}
     <!-- Display the goal model -->
-    <div id="goal_model_div"></div>
+    <div id="scroll-wrapper" style="width: 100%; min-height: 80lvh; overflow-x: auto;">
+        <div id="orgchart-container" style="min-width: max-content;">
+            <div id="goal_model_div"></div>
+        </div>
+    </div>
 
     <!-- TODO: Export the goal model into JPG/JPEG/XML -->
+    <br>
+
+    <div class="row justify-content-center">
+        <button class="btn btn-info center col col-md-2" onclick="downloadOrgChart()">Download goal model as PNG</button>
+    </div>
+    <br>
     <!-- TODO: Operation -->
 {% else %}
     <div class="alert alert-danger" role="alert">
@@ -50,6 +60,7 @@
 
 {% block scripts %}
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript" src=" https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js "></script>
 <script type="text/javascript">
     google.charts.load('current', {packages:["orgchart"]});
     google.charts.setOnLoadCallback(drawChart);
@@ -182,6 +193,17 @@
         // Create and draw the chart
         var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
         chart.draw(data, { 'allowHtml': true });
+    }
+
+    function downloadOrgChart() {
+        const chartDiv = $('#goal_model_div')[0];
+
+        html2canvas(chartDiv).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'goalmodel.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
     }
 
     $(document).ready( function () {
