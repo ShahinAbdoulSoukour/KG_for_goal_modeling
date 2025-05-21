@@ -12,11 +12,10 @@
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Wind_Speed"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Wind_Direction"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Atmospheric_Pressure"/>
-    <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Solar_Radiation"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Evaporation"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Cellular_Networks"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Short_Range_Wireless"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Siphoning">
     <rdfs:label>Siphoning</rdfs:label>
@@ -31,15 +30,9 @@
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Cameras"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Flood_Prediction_Model"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Computer_Vision"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Digital_Twin"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Alerts"/>
     <ex:Monitors rdf:resource="http://www.semanticweb.org/Flooding#River_Level"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Support_Vector_Machines_SVM">
-    <rdfs:label>Support Vector Machines (SVM)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Causes">
     <rdfs:label>Causes</rdfs:label>
@@ -49,10 +42,6 @@
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Wind_Direction">
     <rdfs:label>Wind direction</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Urban_Planning">
-    <rdfs:label>Urban planning</rdfs:label>
-    <ex:Minimizes rdf:resource="http://www.semanticweb.org/Flooding#Infrastructure_Damage"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Infrastructure_Damage_Scenarios">
     <rdfs:label>Infrastructure damage scenarios</rdfs:label>
@@ -83,7 +72,6 @@
     <rdfs:label>Weather forecasting system</rdfs:label>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Weather_Prediction_Model"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Digital_Twin"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Forecasting"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Imagery"/>
@@ -106,16 +94,10 @@
     <rdfs:label>Hydrological monitoring system</rdfs:label>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Flood_Prediction_Model"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Computer_Vision"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Digital_Twin"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
     <ex:Addresses rdf:resource="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks"/>
     <ex:Assesses rdf:resource="http://www.semanticweb.org/Flooding#Water_Quality"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Alerts"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Autoregressive_Integrated_Moving_Average_ARIMA">
-    <rdfs:label>Autoregressive integrated moving average (ARIMA)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Monitors">
     <rdfs:label>Monitors</rdfs:label>
@@ -131,9 +113,6 @@
     <ex:Fails rdf:resource="http://www.semanticweb.org/Flooding#Dam_Failure"/>
     <ex:Avoids rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Data_Privacy">
-    <rdfs:label>Data privacy</rdfs:label>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Water_Quality_Sensor">
     <rdfs:label>Water quality sensor</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
@@ -142,9 +121,8 @@
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Turbidity"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Salinity"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Dissolved_Oxygen"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#LoRaWAN"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Short_Range_Wireless"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Storm_Surges">
     <rdfs:label>Storm surges</rdfs:label>
@@ -162,10 +140,8 @@
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Heavy_Rainfall"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Precipitation"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#LoRaWAN"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Cellular_Networks"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Sigfox"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Satellite_Imagery">
     <rdfs:label>Satellite imagery</rdfs:label>
@@ -174,10 +150,6 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Notify">
     <rdfs:label>Notify</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#DecisionTree">
-    <rdfs:label>Decision Tree</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Anticipates">
     <rdfs:label>Anticipates</rdfs:label>
   </rdf:Description>
@@ -185,33 +157,16 @@
     <rdfs:label>Streamflow sensor</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Streamflow"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#LoRaWAN"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Short_Range_Wireless"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Cellular_Networks"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Communication"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Enables">
     <rdfs:label>Enables</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#K_Nearest_Neighbors_KNN">
-    <rdfs:label>K-Nearest Neighbors (KNN)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Digital_Twin">
-    <rdfs:label>Digital twin</rdfs:label>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Imagery"/>
-    <ex:Simulates rdf:resource="http://www.semanticweb.org/Flooding#Flood_Scenarios"/>
-    <ex:Simulates rdf:resource="http://www.semanticweb.org/Flooding#Infrastructure_Damage_Scenarios"/>
-    <ex:Supports rdf:resource="http://www.semanticweb.org/Flooding#Decision_Making"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks">
     <rdfs:label>Health and safety risks</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#LoRaWAN">
-    <rdfs:label>LoRaWAN</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN">
     <rdfs:label>Low-Power Wide-Area Networks (LPWAN)</rdfs:label>
@@ -234,19 +189,11 @@
     <rdfs:label>Mobile phone messages</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Communication_Channels"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Federated_Learning">
-    <rdfs:label>Federated learning</rdfs:label>
-    <ex:Requires rdf:resource="http://www.semanticweb.org/Flooding#Edge_Computing"/>
-    <ex:Preserves rdf:resource="http://www.semanticweb.org/Flooding#Data_Privacy"/>
-    <ex:Supports rdf:resource="http://www.semanticweb.org/Flooding#Distributed_Learning"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Soil_Moisture_Sensor">
     <rdfs:label>Soil moisture sensor</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Soil_Moisture"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#LoRaWAN"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Sigfox"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Weather_Prediction_Model">
     <rdfs:label>Weather prediction model</rdfs:label>
@@ -276,14 +223,6 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Loss_Of_Life">
     <rdfs:label>Loss of life</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Edge_Computing">
-    <rdfs:label>Edge computing</rdfs:label>
-    <ex:Hosts rdf:resource="http://www.semanticweb.org/Flooding#Flood_Prediction_Model"/>
-    <ex:Hosts rdf:resource="http://www.semanticweb.org/Flooding#Weather_Prediction_Model"/>
-    <ex:Enables rdf:resource="http://www.semanticweb.org/Flooding#Real_Time_Analysis"/>
-    <ex:Supports rdf:resource="http://www.semanticweb.org/Flooding#Local_Decision_Making"/>
-    <ex:Reduces rdf:resource="http://www.semanticweb.org/Flooding#Latency"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Detects">
     <rdfs:label>Detects</rdfs:label>
   </rdf:Description>
@@ -300,10 +239,6 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Floodwalls">
     <rdfs:label>Floodwalls</rdfs:label>
     <ex:Mitigate rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Long_Short_Term_Memory_LSTM">
-    <rdfs:label>Long Short-Term Memory (LSTM)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Deep_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Data">
     <rdfs:label>Data</rdfs:label>
@@ -327,22 +262,12 @@
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Cameras"/>
     <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Flood_Prediction_Model"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Computer_Vision"/>
-    <ex:Uses rdf:resource="http://www.semanticweb.org/Flooding#Digital_Twin"/>
     <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Forecasting"/>
     <ex:Recommends rdf:resource="http://www.semanticweb.org/Flooding#Evacuation_Of_Residents"/>
     <ex:Generates rdf:resource="http://www.semanticweb.org/Flooding#Alerts"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Narrowband_IoT">
-    <rdfs:label>Narrowband IoT (NB-IoT)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Decision_Making">
     <rdfs:label>Decision making</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Sigfox">
-    <rdfs:label>Sigfox</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#People">
     <rdfs:label>People</rdfs:label>
@@ -400,10 +325,9 @@
     <rdfs:label>Water level sensor</rdfs:label>
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Sensor"/>
     <ex:Measures rdf:resource="http://www.semanticweb.org/Flooding#Water_Level"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#LoRaWAN"/>
-    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Narrowband_IoT"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Communication"/>
     <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Short_Range_Wireless"/>
+    <ex:ConnectedVia rdf:resource="http://www.semanticweb.org/Flooding#Low_Power_Wide_Area_Networks_LPWAN"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Weather_Events">
     <rdfs:label>Weather events</rdfs:label>
@@ -422,10 +346,6 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Wide_Area_Flood_Monitoring">
     <rdfs:label>Wide-area flood monitoring</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Recurrent_Neural_Networks_RNN">
-    <rdfs:label>Recurrent Neural Networks (RNN)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Deep_Learning_Models"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Guide">
     <rdfs:label>Guide</rdfs:label>
   </rdf:Description>
@@ -437,10 +357,6 @@
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Inadequate_Maintenance">
     <rdfs:label>Inadequate maintenance</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Transformer">
-    <rdfs:label>Transformer</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Deep_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Satellites">
     <rdfs:label>Satellites</rdfs:label>
@@ -498,10 +414,6 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Uses">
     <rdfs:label>Uses</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Random_Forest">
-    <rdfs:label>Random forest</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Overtopping">
     <rdfs:label>Overtopping</rdfs:label>
   </rdf:Description>
@@ -522,10 +434,6 @@
     <rdfs:label>Infrastructure damage</rdfs:label>
     <ex:Evaluated_Through rdf:resource="http://www.semanticweb.org/Flooding#Infrastructure_Damage_Scenarios"/>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Gradient_Boosting">
-    <rdfs:label>Gradient boosting</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Assesses">
     <rdfs:label>Assesses</rdfs:label>
   </rdf:Description>
@@ -544,17 +452,8 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Flood_Scenarios">
     <rdfs:label>Flood scenarios</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Computer_Vision">
-    <rdfs:label>Computer vision</rdfs:label>
-    <ex:Analyzes rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Imagery"/>
-    <ex:Performs rdf:resource="http://www.semanticweb.org/Flooding#Image_Based_Flood_Detection"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Hosts">
     <rdfs:label>Hosts</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#LogisticRegression">
-    <rdfs:label>Logistic regression</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Machine_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Provides">
     <rdfs:label>Provides</rdfs:label>
@@ -574,18 +473,8 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Store">
     <rdfs:label>Store</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Autonomous_Drones">
-    <rdfs:label>Autonomous drones</rdfs:label>
-    <ex:Detect rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
-    <ex:Guide rdf:resource="http://www.semanticweb.org/Flooding#Evacuation_Routes"/>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Calculates">
     <rdfs:label>Calculates</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Big_Data_Platforms">
-    <rdfs:label>Big data platforms</rdfs:label>
-    <ex:Store rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
-    <ex:Store rdf:resource="http://www.semanticweb.org/Flooding#Satellite_Imagery"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Detention_Ponds">
     <rdfs:label>Detention ponds</rdfs:label>
@@ -607,22 +496,9 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Measures">
     <rdfs:label>Measures</rdfs:label>
   </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Cloud_Computing">
-    <rdfs:label>Cloud computing</rdfs:label>
-    <ex:Hosts rdf:resource="http://www.semanticweb.org/Flooding#Flood_Prediction_Model"/>
-    <ex:Hosts rdf:resource="http://www.semanticweb.org/Flooding#Weather_Prediction_Model"/>
-    <ex:Hosts rdf:resource="http://www.semanticweb.org/Flooding#Digital_Twin"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Local_Decision_Making">
-    <rdfs:label>Local decision making</rdfs:label>
-  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Tsunami">
     <rdfs:label>Tsunami</rdfs:label>
     <ex:Causes rdf:resource="http://www.semanticweb.org/Flooding#Flood"/>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Convolutional_Neural_Networks_CNN">
-    <rdfs:label>Convolutional Neural Networks (CNN)</rdfs:label>
-    <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Deep_Learning_Models"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Railroads_Damage">
     <rdfs:label>Railroads damage</rdfs:label>
@@ -664,9 +540,6 @@
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Communication_Channels">
     <rdfs:label>Communication channels</rdfs:label>
-  </rdf:Description>
-  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Solar_Radiation">
-    <rdfs:label>Solar radiation</rdfs:label>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Evaporation">
     <rdfs:label>Evaporation</rdfs:label>

@@ -280,7 +280,8 @@
         $("#input-datalist").on("input", function() {
             $(this).css("background-color", "#ffffff")
         })
-        $("#okBtn").click(function() {
+
+        function verifyFieldsAndSubmit() {
             if ($("#input-datalist").val() && $("#goal_type").val() && ($("#refinement").val() || !$("#refinement").length)) {
                 if ($("#data_triples td").hasClass("dataTables_empty") ||
                     !$("#data_triples").length ||
@@ -311,6 +312,15 @@
                     $("#refinement").removeClass("text-black-50 bg-light")
                     $("#refinement").css("background-color", "#ffda69")
                 }
+            }
+        }
+
+        $("#okBtn").click(verifyFieldsAndSubmit);
+        $(window).keydown(function(event){
+            if(event.keyCode == 13) {
+                event.preventDefault();
+                verifyFieldsAndSubmit();
+                return false;
             }
         });
 
