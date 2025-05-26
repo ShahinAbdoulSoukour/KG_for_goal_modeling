@@ -173,6 +173,13 @@
           </div>
         </div>
 
+        {% if message_no_file %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message_no_file }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         {% if not goal_with_outputs %} <!-- -->
             {% if unique_triples_entailed is defined %}
             <br>
@@ -252,7 +259,7 @@
                 </table>
             {% else %}
                 <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-                    No relevant information has been identified!
+                    --> No relevant information has been identified!
                 </div>
             {% endif %}
             </form>

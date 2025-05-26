@@ -26,6 +26,7 @@ from utils import test_entailment, test_sentiment_analysis
 from graph_explorator import graph_explorator_bfs_optimized
 from g2t_generator import g2t_generator
 from graph_extender import graph_extender
+from rdflib import Graph
 
 
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
@@ -98,11 +99,6 @@ model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B"
 tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 
 
-# --- Import the Knowledge Graph (KG) ---
-# TODO: upload a knowledge graph (RDF file)
-domain_graph = graph_extender("./flooding_graph_V3.rdf")
-
-
 # Templates (Jinja2)
 templates = Jinja2Templates(directory="templates/")
 
@@ -121,7 +117,10 @@ models.Base.metadata.create_all(bind=engine)
 
 
 
-def find_relevant_information(request: Request, goal_type: str, refinement: Optional[str],
+def find_relevant_information(request: Request,
+                              domain_graph: Graph,
+                              goal_type: str,
+                              refinement: Optional[str],
                               highlevelgoal: str, hlg_id: int,
                               filtered_out_triples_with_goal_id: List[str],
                               beam_width: int,
@@ -142,6 +141,8 @@ def find_relevant_information(request: Request, goal_type: str, refinement: Opti
     ----------
     request:        Request
                     The incoming HTTP request object.
+    domain_graph:   Graph
+                    The knowledge graph.
     goal_type:      str
                     The goal type (e.g., "ACHIEVE", "AVOID").
     refinement:     Optional[str]
@@ -593,8 +594,20 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             A FastAPI response object returned by the `find_relevant_information` function,
             typically a rendered HTML template or redirect depending on the processing logic.
     """
+    # Load and extend KG
+    graph_path = "./extended_graphs/extended_flooding_graph_V3.rdf"
+    if not os.path.exists(graph_path):
+        return templates.TemplateResponse('contextualization.html', {
+            'request': request,
+            'message_no_file': f"❌ Knowledge Graph not found. Please upload it via the 'Upload a Knowledge Graph' page.",
+        })
+
+    domain_graph = graph_extender(graph_path)
+
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
-    response = await run_in_threadpool(lambda: find_relevant_information(request, goal_type,
+    response = await run_in_threadpool(lambda: find_relevant_information(request,
+                                                                         domain_graph,
+                                                                         goal_type,
                                                                          refinement, highlevelgoal,
                                                                          hlg_id,
                                                                          filtered_out_triples_with_goal_id,
