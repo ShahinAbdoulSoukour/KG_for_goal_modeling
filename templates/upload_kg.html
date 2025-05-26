@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Upload a Knowledge Graph{% endblock %}
+
+{% block content %}
+
+    <div class="tab-content mt-3" id="tab-content">
+    <form action="/upload_kg" enctype="multipart/form-data" method="post">
+    <label for="file">Select RDF file:</label><br><br>
+    <input type="file" name="file" id="fileUpload" accept=".rdf" required><br><br>
+    <input type="submit" value="Upload and Extend Graph">
+    </form>
+    </div>
+
+    {% if message %}
+        <p><strong>{{ message }}</strong></p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+    </script>
+{% endblock %}
