@@ -3,6 +3,7 @@
 ## Description
 
 The algorithm incrementally constructs sets of triples (i-triples) and evaluates their entailment with the goal using a natural language inference (NLI) model.
+In this approach, **G2T is not used**.
 
 ### Key concepts
 i-Triple (T)
