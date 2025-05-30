@@ -5,7 +5,6 @@ import os
 import time
 from typing import List, Optional
 import torch
-import requests
 import pandas as pd
 from fastapi import Request, Form, Depends
 from fastapi.templating import Jinja2Templates
@@ -13,8 +12,7 @@ from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import RedirectResponse, Response
-from transformers import (T5ForConditionalGeneration, T5Tokenizer,
-                          AutoTokenizer, AutoModelForSequenceClassification, pipeline)
+from transformers import (AutoTokenizer, AutoModelForSequenceClassification, pipeline)
 from dotenv import load_dotenv
 from transformers.utils import logging
 from sentence_transformers import SentenceTransformer
@@ -24,7 +22,6 @@ from anchor_points_extractor import anchor_points_extractor
 from utils.sparql_queries import find_all_triples_q
 from utils import test_entailment, test_sentiment_analysis
 from graph_explorator import graph_explorator_bfs_optimized
-from g2t_generator import g2t_generator
 from graph_extender import graph_extender
 from rdflib import Graph
 
@@ -72,8 +69,8 @@ api_token = os.getenv("HF_TOKEN")
 api_url_sent = os.getenv("API_URL_SENT")
 api_url_nli = os.getenv("API_URL_NLI")
 use_api = bool((api_url_sent or api_url_nli) and api_token)
-BEAM_WIDTH = int(os.getenv("BEAM_WIDTH", 5))
-MAX_DEPTH = int(os.getenv("MAX_DEPTH", 3))
+BEAM_WIDTH = int(os.getenv("BEAM_WIDTH"))
+MAX_DEPTH = int(os.getenv("MAX_DEPTH"))
 
 
 # --- Import models ---
@@ -86,7 +83,7 @@ if use_api:
     SENTIMENT_TASK = None
 else:
     print("\n--> No HuggingFace API key was found.")
-    MODEL_NLI_NAME = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+    MODEL_NLI_NAME = "tasksource/deberta-small-long-nli"
     TOKENIZER_NLI = AutoTokenizer.from_pretrained(MODEL_NLI_NAME)
     MODEL_NLI = AutoModelForSequenceClassification.from_pretrained(MODEL_NLI_NAME).to(device)
 
@@ -95,8 +92,6 @@ else:
                               tokenizer=SENTIMENT_MODEL_PATH, device=device)
 
 model_sts = SentenceTransformer('all-mpnet-base-v2')
-model_g2t = T5ForConditionalGeneration.from_pretrained("Inria-CEDAR/WebNLG20T5B").to(device)
-tokenizer_g2t = T5Tokenizer.from_pretrained("t5-base", model_max_length=512)
 
 
 # Templates (Jinja2)
@@ -253,9 +248,6 @@ def find_relevant_information(request: Request,
         print("\nANCHOR TRIPLES:")
         print(anchor_points_df.to_string())
 
-        print("\nANCHOR TRIPLES FULL:")
-        print(anchor_points_full_df.to_string())
-
         # --- Transform negative anchor triples ---  --- Sentiment analysis ---
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
             lambda triple: test_sentiment_analysis(triple[0], use_api, SENTIMENT_TASK, neutral_predicates=["is a type of"])[0])
@@ -303,68 +295,19 @@ def find_relevant_information(request: Request,
         unique_triples_entailed = []
 
         if not entailed_triples_df.empty:
-            triples_already_processed = []
-            processed_data = []
-            triples_to_process_grouped = []
-
-            for row in entailed_triples_df.itertuples():
-                triples_to_process = []
-
-                for triple in row.SUBGOALS_SERIALIZED:
-                    if (triple not in triples_already_processed) and (type(triple) is list):
-                        triples_to_process.append(triple)
-
-                if triples_to_process:
-                    triples_to_process_grouped.append((triples_to_process, row.GOAL_TYPE))
-
-                triples_already_processed.extend(triples_to_process)
-
-            print('\nTRIPLES TO PROCESS:')
-            print(triples_to_process)
-
-            print('\nTRIPLES ALREADY PROCESSED:')
-            print(triples_already_processed)
-
-            print('\nTRIPLES TO PROCESS GROUPED:')
-            print(triples_to_process_grouped)
-
-            if triples_to_process_grouped:
-                grps_of_triples = list(filter(lambda grp: len(grp[0]) >= 2, triples_to_process_grouped))
-                if len(grps_of_triples):
-                    # G2T processing on contextualized triples
-                    predictions = g2t_generator([tripls_grp for tripls_grp, _ in grps_of_triples],
-                                                model=model_g2t,
-                                                tokenizer=tokenizer_g2t)
-                    for i in range(len(triples_to_process_grouped)):
-                        if len(triples_to_process_grouped[i][0]) == 1:
-                            predictions.insert(i, "")
-                else:
-                    predictions = [""] * len(triples_to_process_grouped)
-
-                for prediction, (triples, gt) in zip(predictions, triples_to_process_grouped):
-                    processed_data.append({
-                        "ENTAILED_TRIPLE": triples,
-                        "GOAL_TYPE": gt,
-                        "GENERATED_TEXT": prediction
-                    })
-
-            # Create DataFrame from the list of dictionaries
-            processed_data_df = pd.DataFrame(processed_data)
-
-            print('\nPROCESSED DATA (G2T):')
-            print(processed_data_df.to_string())
-            processed_data_df.to_csv("processed_data.csv")
-
             # Add the goal (as high-level goal) in the database (table: goal)
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
             db.commit()
 
             # Add the entailed triples and the goal type in the database (table: outputs)
-            for row in processed_data_df.itertuples():
-                new_results = models.Outputs(generated_text=row.GENERATED_TEXT, goal_type=row.GOAL_TYPE,
-                                             goal_id=new_goal.id)
-                new_results.set_entailed_triple(row.ENTAILED_TRIPLE)
+            for row in entailed_triples_df.itertuples():
+                new_results = models.Outputs(
+                    goal_type=row.GOAL_TYPE,
+                    goal_id=new_goal.id,
+                )
+                # Set the entailed triple(s) - using the serialized version
+                new_results.set_entailed_triple(row.SUBGOALS_SERIALIZED)
                 db.add(new_results)
             db.commit()
 
@@ -396,10 +339,8 @@ def find_relevant_information(request: Request,
             db.commit()
             print('\nParameter added in the database!')
 
-            # Extract the entailed triples and the generated texts (to print)
+            # Extract the entailed triples (to print)
             outputs = db.query(models.Outputs).filter(models.Outputs.goal_id == new_goal.id).all()
-
-            with_generated_texts = False
 
             # Extract data into a list of dictionaries
             data = []
@@ -408,11 +349,8 @@ def find_relevant_information(request: Request,
                     'id': output.id,
                     'goal_id': output.goal_id,
                     'goal_type': output.goal_type,
-                    'generated_text': output.generated_text,
                     'entailed_triple': output.get_entailed_triples()
                 })
-                if output.generated_text != "":
-                    with_generated_texts = True
 
             # Create a DataFrame for storing all outputs
             outputs_df = pd.DataFrame(data)
@@ -432,7 +370,6 @@ def find_relevant_information(request: Request,
                 'goal_with_outputs': goal_with_outputs,
                 'hlg_id': new_goal.id,
                 'all_goal': all_goal,  # for the input (for autocompletion)
-                'with_generated_texts': with_generated_texts,
                 'beam_width': beam_width,
                 'max_depth': max_depth
             })
@@ -534,18 +471,14 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
 
     data = []
 
-    with_generated_texts = False
 
     for output in goal_with_outputs.outputs:
         data.append({
             'id': output.id,
             'goal_id': output.goal_id,
             'goal_type': output.goal_type,
-            'generated_text': output.generated_text,
             'entailed_triple': output.get_entailed_triples()
         })
-        if output.generated_text != "":
-            with_generated_texts = True
 
     # Create a DataFrame for storing all outputs
     outputs_df = pd.DataFrame(data)
@@ -556,7 +489,6 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
                                                                          'goal_with_outputs': goal_with_outputs,
                                                                          'hlg_id': hlg_id,
                                                                          'all_goal': all_goal,
-                                                                         'with_generated_texts': with_generated_texts,
                                                                          "params": params})
 
 
@@ -595,7 +527,7 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             typically a rendered HTML template or redirect depending on the processing logic.
     """
     # Load and extend KG
-    graph_path = "./extended_graphs/extended_flooding_graph_V3.rdf"
+    graph_path = "./extended_graphs/extended_flooding_graph_V3_modified.rdf"
     if not os.path.exists(graph_path):
         return templates.TemplateResponse('contextualization.html', {
             'request': request,
