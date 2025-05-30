@@ -43,7 +43,7 @@ class Outputs(Base):
     __tablename__ = "outputs"
 
     id = Column(Integer, primary_key=True)
-    generated_text = Column(String(255))
+    # generated_text = Column(String(255))
     goal_type = Column(String(10))
     entailed_triple = Column(String(100))
     goal_id = Column(Integer, ForeignKey('goal.id'))
