@@ -188,9 +188,7 @@
                 <thead>
                 <tr>
                     <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-                    {% if with_generated_texts %}
-                    <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>A more readable version of the groups of information extracted.</strong> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
-                    {% endif %}
+
                     <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<strong>Relevant information extracted in raw format.</strong> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
                 </tr>
                 </thead>
@@ -198,9 +196,7 @@
                     {% for idx, row in outputs.iterrows() %} <!-- outputs -->
                     <tr>
                         <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-                        {% if with_generated_texts %}
-                        <td data-name="generated_text" class="generated_text">{{ row['generated_text'] }}</td>
-                        {% endif %}
+
                         <td>
                             {% for t in row['entailed_triple'] %}
                             <div class="form-check">
@@ -231,9 +227,7 @@
                     <thead>
                     <tr>
                         <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i></th>
-                        {% if with_generated_texts %}
-                        <th>Generated text <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>A more readable version of certain information extracted.</b> <br><br>Should not be considered as a goal by itself but can be taken as inspiration to produce one."></i></th>
-                        {% endif %}
+
                         <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip" data-placement="bottom" title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i></th>
                     </tr>
                     </thead>
@@ -241,9 +235,7 @@
                     {% for idx, row in outputs.iterrows() %} <!-- outputs -->
                     <tr>
                         <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-                        {% if with_generated_texts %}
-                        <td data-name="generated_text" class="generated_text prevent-select">{{ row['generated_text'] }}</td>
-                        {% endif %}
+
                         <td>
                             {% for t in row['entailed_triple'] %}
                             <div class="form-check">
