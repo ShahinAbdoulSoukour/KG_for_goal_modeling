@@ -112,44 +112,39 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
             neighbor_serialized = neighbor["TRIPLE_NEIGHBOR_SERIALIZED"]
 
             # ------
+            candidate_serialized = current_row["PREMISE_SERIALIZED"] + neighbor["TRIPLE_NEIGHBOR_SERIALIZED"]
 
-            # Skip if T∪{n} is already in ENT
-            candidate_serialized = current_row["PREMISE_SERIALIZED"] + neighbor_serialized
-            candidate_serialized_hashed = hashable_premise_serialized(candidate_serialized)
+            # Skip if T∪{n} is already in ENT (by exact match)
+            candidate_set = set(tuple(triple) for triple in candidate_serialized)
+            already_entailed = False
 
-            if any(
-                    candidate_serialized_hashed == hashable_premise_serialized(s)
-                    for s in entailed_triples_df["SUBGOALS_SERIALIZED"]
-            ):
-                print(f"Skipping (already entailed in previous steps - candidate_serialized_hashed): {candidate_serialized}")
-                continue
-
-            # Skip if any subset of T∪{n} including n is in ENT
-            all_with_n_subsets = []
-            t_plus_n = candidate_serialized
-            for i in range(1, len(t_plus_n)):
-                for combo in combinations(t_plus_n, i):
-                    if any(
-                            hashable_premise_serialized(n_item) == hashable_premise_serialized(item)
-                            for item in combo for n_item in neighbor_serialized
-                    ):
-                        all_with_n_subsets.append(combo)
-
-            subset_in_ent = False
-            for subset in all_with_n_subsets:
-                subset_hashed = hashable_premise_serialized(list(subset))
-                if any(
-                        subset_hashed == hashable_premise_serialized(s)
-                        for s in entailed_triples_df["SUBGOALS_SERIALIZED"]
-                ):
-                    subset_in_ent = True
-                    print(f"Skipping (already entailed in previous steps - subset_hashed): {subset_hashed}")
+            for ent_group in entailed_triples_df["SUBGOALS_SERIALIZED"]:
+                ent_set = set(tuple(triple) for triple in ent_group)
+                if candidate_set == ent_set:
+                    print(f"Skipping (exact match already entailed): {candidate_set}")
+                    already_entailed = True
                     break
 
-            if subset_in_ent:
+            if already_entailed:
+                valid_neighbors = []
+                break  # Skip the entire current T (anchor triple)
+
+            # Exclude neighbor n if already contained in any entailed triple set
+            neighbor_triple = tuple(neighbor["TRIPLE_NEIGHBOR_SERIALIZED"][0])  # Get the serialized neighbor triple
+
+            # Check if this neighbor is part of any entailed group
+            neighbor_in_entailed = False
+            for ent_group in entailed_triples_df["SUBGOALS_SERIALIZED"]:
+                ent_triples = [tuple(triple) for triple in ent_group]
+                if neighbor_triple in ent_triples:
+                    print(f"Neighbor {neighbor_triple} is part of entailed group {ent_group}")
+                    neighbor_in_entailed = True
+                    break
+
+            if neighbor_in_entailed:
+                print("Increasing beam width by 1 as we're skipping this neighbor")
                 beam_increase += 1
                 continue
-
             # ------
 
             valid_neighbors.append(neighbor)
@@ -280,15 +275,6 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
 
                     # Get the corresponding serialized subset
                     subset_serialized = [triple_to_serialized[triple] for triple in subset]
-
-                    # Skip if this subset_serialized is already in entailed_triples_df
-                    subset_serialized_hashable = hashable_premise_serialized(subset_serialized)
-                    if any(
-                            subset_serialized_hashable == hashable_premise_serialized(s)
-                            for s in entailed_triples_df["SUBGOALS_SERIALIZED"]
-                    ):
-                        print("\nSkipping (already entailed in previous steps):", subset_premise)
-                        continue
 
                     subset_df = pd.DataFrame({
                         "GOAL_TYPE": [neighbor_row["GOAL_TYPE"]],
