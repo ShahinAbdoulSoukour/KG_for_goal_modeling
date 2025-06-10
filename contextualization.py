@@ -24,6 +24,7 @@ from utils import test_entailment, test_sentiment_analysis
 from graph_explorator import graph_explorator_bfs_optimized
 from graph_extender import graph_extender
 from rdflib import Graph
+import rdflib
 
 
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
@@ -83,7 +84,9 @@ if use_api:
     SENTIMENT_TASK = None
 else:
     print("\n--> No HuggingFace API key was found.")
-    MODEL_NLI_NAME = "tasksource/deberta-small-long-nli"
+    #MODEL_NLI_NAME = "tasksource/deberta-small-long-nli"
+    #MODEL_NLI_NAME = "tasksource/ModernBERT-base-nli"
+    MODEL_NLI_NAME = "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
     TOKENIZER_NLI = AutoTokenizer.from_pretrained(MODEL_NLI_NAME)
     MODEL_NLI = AutoModelForSequenceClassification.from_pretrained(MODEL_NLI_NAME).to(device)
 
@@ -534,11 +537,15 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             'message_no_file': f"❌ Knowledge Graph not found. Please upload it via the 'Upload a Knowledge Graph' page.",
         })
 
-    domain_graph = graph_extender(graph_path)
+    #domain_graph = graph_extender(graph_path)
+
+    # load RDF graph
+    graph = rdflib.Graph()
+    graph.parse(graph_path)
 
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
     response = await run_in_threadpool(lambda: find_relevant_information(request,
-                                                                         domain_graph,
+                                                                         graph,
                                                                          goal_type,
                                                                          refinement, highlevelgoal,
                                                                          hlg_id,
