@@ -36,15 +36,13 @@ def anchor_points_extractor(
     # remove filtered (or selected) triples from the goal_triples_df DataFrame entirely
     goal_triples_df = goal_triples_df[~goal_triples_df["TRIPLE"].isin(filtered_out_triples)].copy()
 
-    goal_triples_df["SCORE"] = goal_triples_df.apply(
-        lambda row: pd.Series(
-            cosine_similarity(
-                model.encode(row["GOAL"]).reshape(1, -1),  # goal embedding
-                model.encode(row["TRIPLE"]).reshape(1, -1),  # triples (as str) embedding
+    goal = goal_triples_df["GOAL"].iloc[0]
+
+    goal_triples_df["SCORE"] = pd.Series(cosine_similarity(
+                model.encode([goal]),  # goal embedding
+                model.encode(goal_triples_df["TRIPLE"].to_list()),  # triples (as str) embedding
             ).flatten(),
-        ),
-        axis=1,
-    )
+        )
 
     highest_score = goal_triples_df["SCORE"].max()
 
