@@ -17,6 +17,11 @@ def hashable_premise_serialized(premise_serialized):
 
 def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nli, model_nli,
                                    beam_width, max_depth, use_api, anchor_points_full_df, sentiment_task, ft):
+
+    df = test_entailment(df, tokenizer_nli, model_nli_name, model_nli, use_api)
+    print("\nENTAILMENT RESULTS:")
+    print(df.to_string())
+
     entailed_triples_df = pd.DataFrame(columns=["GOAL_TYPE", "SUBGOALS", "SUBGOALS_SERIALIZED", "SCORE", "NLI_LABEL"])
     priority_queue = []
     visited = set()  # Use a set to track visited premises for faster lookups

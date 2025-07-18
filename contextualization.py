@@ -64,6 +64,9 @@ logging.set_verbosity_error()
 #requests.post(API_URL_nli, headers=headers, json=data_nli)
 #requests.post(API_URL_sent, headers=headers, json=data_sent)
 
+# get the start time
+st = time.time()
+
 # Check for Hugging Face API availability
 load_dotenv()
 api_token = os.getenv("HF_TOKEN")
@@ -94,7 +97,15 @@ else:
     SENTIMENT_TASK = pipeline("sentiment-analysis", model=SENTIMENT_MODEL_PATH,
                               tokenizer=SENTIMENT_MODEL_PATH, device=device)
 
+
 model_sts = SentenceTransformer('all-mpnet-base-v2')
+
+# get the end time
+et = time.time()
+
+# get the execution time
+elapsed_time = et - st
+print('Execution time (loading model):', elapsed_time, 'seconds')
 
 
 # Templates (Jinja2)
@@ -165,7 +176,7 @@ def find_relevant_information(request: Request,
     """
 
     # get the start time
-    st = time.time()
+    st2 = time.time()
 
     # Goal
     print('\nGoal:', highlevelgoal)
@@ -216,6 +227,9 @@ def find_relevant_information(request: Request,
                 print(modified_filtered_triples_df.to_string())
 
         # --- Extract all triples in the KG ---
+        # get the start time
+        st3 = time.time()
+
         query_results = domain_graph.query(find_all_triples_q)
         triples = [list(map(str, [row["subject"], row["predicate"], row["object"]])) for row in query_results.bindings]
 
@@ -238,7 +252,17 @@ def find_relevant_information(request: Request,
 
         goal_triples_df = pd.DataFrame(data)
 
+        # get the end time
+        et3 = time.time()
+
+        # get the execution time
+        elapsed_time3 = et3 - st3
+        print('Execution time (TRIPLES EXTRACTION):', elapsed_time3, 'seconds')
+
         ###
+        # get the start time
+        st4 = time.time()
+
         ft = [item['triple_filtered_from_formulated_goal'] for item in modified_filtered_triples]
         print("\nFILTERED TRIPLE(S):")
         print(ft)
@@ -251,7 +275,18 @@ def find_relevant_information(request: Request,
         print("\nANCHOR TRIPLES:")
         print(anchor_points_df.to_string())
 
+        # get the end time
+        et4 = time.time()
+
+        # get the execution time
+        elapsed_time4 = et4 - st4
+        print('Execution time (Embedding + Anchor triples extraction):', elapsed_time4, 'seconds')
+
         # --- Transform negative anchor triples ---  --- Sentiment analysis ---
+
+         # get the start time
+        st5 = time.time()
+
         anchor_points_df["SENTIMENT"] = anchor_points_df["TRIPLE_SERIALIZED"].apply(
             lambda triple: test_sentiment_analysis(triple[0], use_api, SENTIMENT_TASK, neutral_predicates=["is a type of"])[0])
         anchor_points_df.rename(columns={'TRIPLE': 'PREMISE', 'GOAL': 'HYPOTHESIS'}, inplace=True)
@@ -284,17 +319,36 @@ def find_relevant_information(request: Request,
         print("\nTRANSFORMED ANCHOR POINTS:")
         print(transformed_anchor_points.to_string())
 
+        # get the end time
+        et5 = time.time()
+
+        # get the execution time
+        elapsed_time5 = et5 - st5
+        print('Execution time (sentiment analysis):', elapsed_time5, 'seconds')
+
+
         # --- Test the entailment between the high-level goal (as hypothesis) and triples (as premise) ---
-        entailment_result = test_entailment(transformed_anchor_points, TOKENIZER_NLI, MODEL_NLI_NAME, MODEL_NLI, use_api)
-        print("\nENTAILMENT RESULTS:")
-        print(entailment_result.to_string())
+
+        # get the start time
+        st6 = time.time()
 
         # --- Explore graph to improve contextualization ---
-        entailed_triples_df = graph_explorator_bfs_optimized(entailment_result, highlevelgoal, domain_graph,
+        entailed_triples_df = graph_explorator_bfs_optimized(transformed_anchor_points, highlevelgoal, domain_graph,
                                                              MODEL_NLI_NAME, TOKENIZER_NLI, MODEL_NLI, beam_width, max_depth,
                                                              use_api, anchor_points_full_df, SENTIMENT_TASK, ft)
 
+         # get the end time
+        et6 = time.time()
+
+        # get the execution time
+        elapsed_time6 = et6 - st6
+        print('Execution time (graph explorator):', elapsed_time6, 'seconds')
+
+
         # --- ### ---
+        # get the start time
+        st7 = time.time()
+
         unique_triples_entailed = []
 
         if not entailed_triples_df.empty:
@@ -359,11 +413,18 @@ def find_relevant_information(request: Request,
             outputs_df = pd.DataFrame(data)
 
             # get the end time
-            et = time.time()
+            et7 = time.time()
 
             # get the execution time
-            elapsed_time = et - st
-            print('Execution time:', elapsed_time, 'seconds')
+            elapsed_time7 = et7 - st7
+            print('Execution time (database):', elapsed_time7, 'seconds')
+
+            # get the end time
+            et2 = time.time()
+
+            # get the execution time
+            elapsed_time2 = et2 - st2
+            print('Execution time:', elapsed_time2, 'seconds')
 
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
@@ -399,11 +460,18 @@ def find_relevant_information(request: Request,
             print('\nParameter added in the database!')
 
             # get the end time
-            et = time.time()
+            et7 = time.time()
 
             # get the execution time
-            elapsed_time = et - st
-            print('Execution time:', elapsed_time, 'seconds')
+            elapsed_time7 = et7 - st7
+            print('Execution time (database):', elapsed_time7, 'seconds')
+
+            # get the end time
+            et2 = time.time()
+
+            # get the execution time
+            elapsed_time2 = et2 - st2
+            print('Execution time (whole process):', elapsed_time2, 'seconds')
 
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
