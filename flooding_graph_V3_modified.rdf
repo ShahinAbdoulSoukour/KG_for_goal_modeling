@@ -46,6 +46,9 @@
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Infrastructure_Damage_Scenarios">
     <rdfs:label>Infrastructure damage scenarios</rdfs:label>
   </rdf:Description>
+  <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Environmental_Damage_Scenarios">
+    <rdfs:label>Environmental damage scenarios</rdfs:label>
+  </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Flood_Prediction_Model">
     <rdfs:label>Flood prediction model</rdfs:label>
     <ex:Processes rdf:resource="http://www.semanticweb.org/Flooding#Data"/>
@@ -235,6 +238,7 @@
     <rdf:type rdf:resource="http://www.semanticweb.org/Flooding#Infrastructure_Damage"/>
     <ex:LeadsTo rdf:resource="http://www.semanticweb.org/Flooding#Health_And_Safety_Risks"/>
     <ex:LeadsTo rdf:resource="http://www.semanticweb.org/Flooding#Loss_Of_Life"/>
+    <ex:Evaluated_Through rdf:resource="http://www.semanticweb.org/Flooding#Environmental_Damage_Scenarios"/>
   </rdf:Description>
   <rdf:Description rdf:about="http://www.semanticweb.org/Flooding#Floodwalls">
     <rdfs:label>Floodwalls</rdfs:label>
