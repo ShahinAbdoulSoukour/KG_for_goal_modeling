@@ -3,6 +3,7 @@ from fastapi import Request, UploadFile, File, APIRouter
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from graph_extender import graph_extender
+import requests
 
 # Router and templates
 router = APIRouter()
@@ -31,10 +32,23 @@ async def upload_kg(request: Request, file: UploadFile = File(...)):
         output_path = os.path.join(EXTENDED_FOLDER, f"extended_{file.filename}")
         extended_graph.serialize(destination=output_path, format="xml")
 
-        message = f"Graph uploaded and extended successfully! Saved to: {output_path}"
+        # Upload to GraphDB using requests
+        with open(output_path, "rb") as data:
+            response = requests.post(
+                "http://localhost:7200/repositories/Flood_Management_KG/statements",
+                data=data,
+                headers={"Content-Type": "application/rdf+xml"}
+            )
+
+        if response.status_code in [200, 204]:
+            message = f"Graph uploaded and extended successfully! Saved to: {output_path}"
+        else:
+            message = f"Failed to upload to GraphDB: {response.status_code} - {response.text}"
+
     except Exception as e:
         message = f"Failed to process the graph: {str(e)}"
     finally:
-        os.remove(uploaded_path)
+        if os.path.exists(uploaded_path):
+            os.remove(uploaded_path)
 
     return templates.TemplateResponse("upload_kg.html", {"request": request, "message": message})

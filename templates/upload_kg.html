@@ -3,12 +3,21 @@
 {% block title %}Upload a Knowledge Graph{% endblock %}
 
 {% block content %}
+    <div id="loading-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(255,255,255,0.8); z-index:9999; text-align:center; padding-top:200px;">
+        <div class="d-flex justify-content-center">
+          <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+        <br>
+        <p>Uploading, please wait...</p>
+    </div>
 
     <div class="tab-content mt-3" id="tab-content">
     <form action="/upload_kg" enctype="multipart/form-data" method="post">
-    <label for="file">Select RDF file:</label><br><br>
-    <input type="file" name="file" id="fileUpload" accept=".rdf" required><br><br>
-    <input type="submit" value="Upload and Extend Graph">
+        <label for="file">Select RDF file:</label><br><br>
+        <input type="file" name="file" id="fileUpload" accept=".rdf" required><br><br>
+        <input type="submit" value="Upload and Extend Graph">
     </form>
     </div>
 
@@ -18,6 +27,9 @@
 {% endblock %}
 
 {% block scripts %}
-    <script>
-    </script>
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    document.getElementById('loading-screen').style.display = 'block';
+});
+</script>
 {% endblock %}
