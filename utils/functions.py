@@ -1,12 +1,8 @@
 import os
 import time
-from typing import Optional
-
 import requests
 import torch
-
-from sklearn.metrics.pairwise import cosine_similarity
-from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification, Pipeline, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import pandas as pd
 
 from utils.sparql_queries import find_all_triples_with_2_nodes_q
@@ -366,11 +362,10 @@ def get_neighbors(triple, triple_serialized, graph):
     subject = triple_serialized[0][0]
     object = triple_serialized[-1][2]
 
-    data_concatenate_triples = []
-
     query_results = graph.query(find_all_triples_with_2_nodes_q.format(subject, object))
-    query_results_list = [[str(row["subject"]), str(row["predicate"]), str(row["object"])] for row in
-                          query_results.bindings]  # triple
+    # query_results_list = [[str(row["subject"]), str(row["predicate"]), str(row["object"])] for row in query_results.bindings]  # triple
+
+    query_results_list = [[str(row["subject"]), str(row["predicate"]), str(row["object"])] for row in query_results]  # triple
 
     data_concatenate_triples = {
         "TRIPLE_NEIGHBOR": [],

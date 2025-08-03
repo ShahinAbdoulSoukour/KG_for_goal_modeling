@@ -25,6 +25,7 @@ from graph_explorator import graph_explorator_bfs_optimized
 from graph_extender import graph_extender
 from rdflib import Graph
 import rdflib
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 
 
 os.environ['HF_HOME'] = os.getcwd() + "/cache/"
@@ -99,6 +100,9 @@ else:
 
 
 model_sts = SentenceTransformer('all-mpnet-base-v2')
+
+QUERY_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG"
+UPDATE_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG/statements"
 
 # get the end time
 et = time.time()
@@ -230,8 +234,12 @@ def find_relevant_information(request: Request,
         # get the start time
         st3 = time.time()
 
+        #query_results = domain_graph.query(find_all_triples_q)
+        #triples = [list(map(str, [row["subject"], row["predicate"], row["object"]])) for row in query_results.bindings]
+
+        # Extract all triples via SPARQL Endpoint
         query_results = domain_graph.query(find_all_triples_q)
-        triples = [list(map(str, [row["subject"], row["predicate"], row["object"]])) for row in query_results.bindings]
+        triples = [list(map(str, [row["subject"], row["predicate"], row["object"]])) for row in query_results]
 
         data = []
         for t in triples:
@@ -598,22 +606,29 @@ async def contextualization(request: Request, goal_type: str = Form(...), refine
             typically a rendered HTML template or redirect depending on the processing logic.
     """
     # Load and extend KG
-    graph_path = "./extended_graphs/extended_flooding_graph_V3_modified.rdf"
-    if not os.path.exists(graph_path):
-        return templates.TemplateResponse('contextualization.html', {
-            'request': request,
-            'message_no_file': f"❌ Knowledge Graph not found. Please upload it via the 'Upload a Knowledge Graph' page.",
-        })
+    # graph_path = "./extended_graphs/extended_flooding_graph_V3_modified.rdf"
+    # if not os.path.exists(graph_path):
+    #     return templates.TemplateResponse('contextualization.html', {
+    #         'request': request,
+    #         'message_no_file': f"❌ Knowledge Graph not found. Please upload it via the 'Upload a Knowledge Graph' page.",
+    #     })
 
     #domain_graph = graph_extender(graph_path)
 
     # load RDF graph
-    graph = rdflib.Graph()
-    graph.parse(graph_path)
+    #graph = rdflib.Graph()
+    #graph.parse(graph_path)
+
+    # Connect to GraphDB
+    store = SPARQLUpdateStore()
+    store.open((QUERY_ENDPOINT, UPDATE_ENDPOINT))
+
+    # Create a Graph using this store
+    domain_graph = Graph(store=store)
 
     # The process is performed asynchronously in a parallel thread to allow the navigation in other parts of the app
     response = await run_in_threadpool(lambda: find_relevant_information(request,
-                                                                         graph,
+                                                                         domain_graph,
                                                                          goal_type,
                                                                          refinement, highlevelgoal,
                                                                          hlg_id,
