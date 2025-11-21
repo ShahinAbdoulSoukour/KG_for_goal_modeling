@@ -1,43 +1,5 @@
 [![python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
 
-## Description
-
-The algorithm incrementally constructs sets of triples (i-triples) and evaluates their entailment with the goal using a natural language inference (NLI) model.
-In this approach, **G2T is not used**.
-
-### Key concepts
-i-Triple (T)
-
-A set of i triples, composed of:
-- One anchor triple
-- Up to i-1 neighbor triples (context)
-
-### Key features
-Each anchor triple is evaluated against the goal using a NLI model:
-- If entailing, it is stored and marked as retained.
-- If non-entailing, context expansion begins.
-
-#### Context Expansion for Non-Entailing Triples
-- The non-entailing anchor forms a 1-triple T.
-- Neighbor triples are ranked by similarity. A beam width of top candidates is selected.
-- For each neighbor triple n:
-  - If T ∪ {n} is already in ENT and entailing → skip.
-  - If n itself is entailing → exclude and expand beam.
-  - Sentiment-prefixed if needed.
-  - Evaluate T ∪ {n}:
-    - If entailing, check if any subset that includes n is also entailing → retain the smallest entailing subset.
-    - If none are entailing but score improves, continue expanding the triple set with more neighbors (up to a depth limit).
-
-
-### General Step
-Repeats the same logic for existing i-triples (i > 1):
-- Add a new neighbor n.
-- Skip if any subset including n is already entailing.
-- Evaluate T ∪ {n} and its subsets.
-- Retain the smallest subset if entailing.
-- If score improves, continue expansion.
-
-
 ## Installing the dependencies
 
 Inside a dedicated Python environment:
@@ -46,10 +8,46 @@ Inside a dedicated Python environment:
 pip install -r requirements.txt
 ```
 
+## Installing GraphDB
+
+1.  Download GraphDB distribution: 
+```shell
+curl -L -o graphdb.zip https://download.ontotext.com/owlim/dbba7356-57e2-11f0-aa4c-42843b1b6b38/graphdb-11.0.2-dist.zip
+```
+2.	Install brew:
+```shell
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+3.  Add Homebrew to your PATH:
+```shell
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+```
+4.  Unzip the GraphDB package:
+```shell
+unzip graphdb.zip
+```
+5.  Install jdk
+```shell
+brew install openjdk
+```
+6.  Start GraphDB:
+```shell
+./bin/graphdb
+```
+7.  Add a license and create a new repository through the GraphDB interface (via Settings).
+Use a name matching your project, for example:
+```shell
+Flood_Management_KG
+```
+Ensure that this repository name matches the query and update endpoints defined in `contextualization.py`:
+```shell
+QUERY_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG"
+UPDATE_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG/statements"
+```
 ## Run the tool
 
 ```shell
-uvicorn main:app
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 The tool is then accessible by opening a webpage at the URL [127.0.0.1:8000](http://127.0.0.1:8000) or [localhost:8000](http://localhost:8000)
@@ -59,5 +57,15 @@ The tool is then accessible by opening a webpage at the URL [127.0.0.1:8000](htt
 If you use HuggingFace Inference Endpoints, you can perform the NLI and sentiment analysis tasks on remote servers by creating a `.env` file at the root of this project and adding the following environment variables:
 
 - `HF_TOKEN`: Your HuggingFace Inference Endpoints access token
-- `API_URL_NLI`: The URL to your endpoint containing a model dedicated to NLI (in our paper, we use `ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli`)
-- `API_URL_SENT`: The URL to your endpoint containing a model dedicated to sentiment analysis (in our paper, we use `cardiffnlp/twitter-roberta-base-sentiment-latest`)
+- `API_URL_NLI`: The URL to your endpoint containing a model dedicated to NLI (we use `ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli`)
+- `API_URL_SENT`: The URL to your endpoint containing a model dedicated to sentiment analysis (we use `cardiffnlp/twitter-roberta-base-sentiment-latest`)
+
+## Accelerating Goal Refinement
+
+To speed up the entire goal refinement process, you can leverage a high-performance GPU by using, for example, the [Runpod](https://www.runpod.io/) platform.
+After setting up a pod with all required dependencies and GraphDB installed, you can securely access the environment from your local machine by creating an SSH tunnel and opening it in your web browser.
+
+```shell
+ssh -L 8000:127.0.0.1:8000 <your SSH command accessible from the Runpod platform>
+```
+Now you can open your web browser and access our tool via this link: [127.0.0.1:8000](http://127.0.0.1:8000) or [localhost:8000](http://localhost:8000).
