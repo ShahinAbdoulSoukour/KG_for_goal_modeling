@@ -1,0 +1,36 @@
+## Description
+
+The algorithm incrementally constructs sets of triples (i-triples) and evaluates their entailment with the goal using a natural language inference (NLI) model.
+In this approach, **G2T is not used**.
+
+### Key concepts
+i-Triple (T)
+
+A set of i triples, composed of:
+- One anchor triple
+- Up to i-1 neighbor triples (context)
+
+### Key features
+Each anchor triple is evaluated against the goal using a NLI model:
+- If entailing, it is stored and marked as retained.
+- If non-entailing, context expansion begins.
+
+#### Context Expansion for Non-Entailing Triples
+- The non-entailing anchor forms a 1-triple T.
+- Neighbor triples are ranked by similarity. A beam width of top candidates is selected.
+- For each neighbor triple n:
+  - If T ∪ {n} is already in ENT and entailing → skip.
+  - If n itself is entailing → exclude and expand beam.
+  - Sentiment-prefixed if needed.
+  - Evaluate T ∪ {n}:
+    - If entailing, check if any subset that includes n is also entailing → retain the smallest entailing subset.
+    - If none are entailing but score improves, continue expanding the triple set with more neighbors (up to a depth limit).
+
+
+### General Step
+Repeats the same logic for existing i-triples (i > 1):
+- Add a new neighbor n.
+- Skip if any subset including n is already entailing.
+- Evaluate T ∪ {n} and its subsets.
+- Retain the smallest subset if entailing.
+- If score improves, continue expansion.
