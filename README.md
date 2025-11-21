@@ -44,6 +44,17 @@ Ensure that this repository name matches the query and update endpoints defined 
 QUERY_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG"
 UPDATE_ENDPOINT = "http://localhost:7200/repositories/Flood_Management_KG/statements"
 ```
+And in `upload_kg.py`:
+```shell
+# Upload to GraphDB using requests
+with open(output_path, "rb") as data:
+    response = requests.post(
+        "http://localhost:7200/repositories/Flood_Management_KG/statements",
+        data=data,
+        headers={"Content-Type": "application/rdf+xml"}
+    )
+```
+
 ## Run the tool
 
 ```shell
