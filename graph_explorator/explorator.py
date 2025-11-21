@@ -150,6 +150,16 @@ def graph_explorator_bfs_optimized(df, goal, graph, model_nli_name, tokenizer_nl
                 print("Increasing beam width by 1 as we're skipping this neighbor")
                 beam_increase += 1
                 continue
+
+            # neighbor_in_entailed = any(
+            #     neighbor_triple in [tuple(triple) for triple in ent_group]
+            #     for ent_group in entailed_triples_df["SUBGOALS_SERIALIZED"]
+            # )
+            
+            # if neighbor_in_entailed:
+            #     print(f"Skipping neighbor {neighbor_triple} as it's already part of an entailed group.")
+            #     continue
+
             # ------
 
             valid_neighbors.append(neighbor)
