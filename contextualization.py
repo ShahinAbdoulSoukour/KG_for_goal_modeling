@@ -382,7 +382,7 @@ def find_relevant_information(request: Request,
             if modified_filtered_triples:
                 for row in modified_filtered_triples_df.itertuples():
                     # Add the filtered triples (selected by the designer for creating subgoals) to the database
-                    # (table: filtered_triple)
+                    # (table: triple_filtered)
                     filtered_triple = models.Triple_Filtered(subgoal_id=new_goal.id,
                                                              high_level_goal_id=row.goal_id)
                     filtered_triple.set_entailed_triple(row.triple_filtered_from_formulated_goal)
@@ -437,7 +437,8 @@ def find_relevant_information(request: Request,
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
                 'highlevelgoal': highlevelgoal,
-                'unique_triples_entailed': enumerate(unique_triples_entailed),
+                'highlevelgoal_type': new_goal.goal_type,
+                #'unique_triples_entailed': enumerate(unique_triples_entailed),
                 'outputs': outputs_df,
                 'goal_with_outputs': goal_with_outputs,
                 'hlg_id': new_goal.id,
@@ -452,6 +453,18 @@ def find_relevant_information(request: Request,
             new_goal = models.Goal(goal_type=goal_type, goal_name=highlevelgoal)
             db.add(new_goal)
             db.commit()
+
+            # If certain triples are selected
+            if modified_filtered_triples:
+                for row in modified_filtered_triples_df.itertuples():
+                    # Add the filtered triples (selected by the designer for creating subgoals) to the database
+                    # (table: triple_filtered)
+                    filtered_triple = models.Triple_Filtered(subgoal_id=new_goal.id,
+                                                             high_level_goal_id=row.goal_id)
+                    filtered_triple.set_entailed_triple(row.triple_filtered_from_formulated_goal)
+                    db.add(filtered_triple)
+                db.commit()
+                print("\nSubgoal added in the database!")
 
             if hlg_id != -1:
                 db_hierarchy = models.Hierarchy(high_level_goal_id=hlg_id, refinement=refinement,
@@ -484,6 +497,7 @@ def find_relevant_information(request: Request,
             return templates.TemplateResponse('contextualization.html', context={
                 'request': request,
                 'highlevelgoal': highlevelgoal,
+                'highlevelgoal_type': new_goal.goal_type,
                 'message': message,
                 'hlg_id': new_goal.id,
                 'goal_with_outputs': goal_with_outputs,
@@ -547,9 +561,9 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
         return RedirectResponse("/")
 
     highlevelgoal = goal_with_outputs.goal_name
+    highlevelgoal_type = goal_with_outputs.goal_type
 
     data = []
-
 
     for output in goal_with_outputs.outputs:
         data.append({
@@ -562,10 +576,50 @@ async def contextualization(request: Request, hlg_id: int, db: Session = Depends
     # Create a DataFrame for storing all outputs
     outputs_df = pd.DataFrame(data)
 
+
+    ###
+    # Connect to GraphDB
+    store = SPARQLUpdateStore()
+    store.open((QUERY_ENDPOINT, UPDATE_ENDPOINT))
+    domain_graph = Graph(store=store)
+
+    # Query all triples
+    query_results = domain_graph.query(find_all_triples_q)
+
+    triple_rows = []
+
+    for r in query_results:
+        s = str(r["subject"])
+        p = str(r["predicate"])
+        o = str(r["object"])
+
+        triple_rows.append({
+            "goal_id": hlg_id,
+            "subject": s,
+            "predicate": p,
+            "object": o,
+            "triple": f"{s} {p} {o}",
+            "triple_serialized": [s, p, o],
+        })
+
+    triples_df = pd.DataFrame(triple_rows)
+    #print(triples_df.to_string())
+    ###
+
+
+    message = None
+
+    if outputs_df.empty:
+        message = "No triple"
+        print("\nNo triples!")
+
     return templates.TemplateResponse('contextualization.html', context={'request': request,
                                                                          'highlevelgoal': highlevelgoal,
+                                                                         'highlevelgoal_type': highlevelgoal_type,
                                                                          'outputs': outputs_df,
                                                                          'goal_with_outputs': goal_with_outputs,
+                                                                         "triples": triples_df,
+                                                                         'message': message,
                                                                          'hlg_id': hlg_id,
                                                                          'all_goal': all_goal,
                                                                          "params": params})

@@ -35,26 +35,49 @@
         </div>
     </div>
 
+    {% if highlevelgoal is defined %}
+
     <div class="modal fade" id="verificationModal" tabindex="-1" role="dialog" aria-labelledby="verificationModalLabel"
         aria-hidden="true" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog">
             <div class="modal-content">
+
                 <div class="modal-header">
-                    <h5 class="modal-title" id="verificationModalLabel">You have not selected any information</h5>
+                    <h5 class="modal-title">Information not selected</h5>
                 </div>
+
                 <div class="modal-body">
-                    Are you sure you did not use any of the information extracted to produce your goal?
+
+                    <p>Are you sure you did not use any of the extracted information to produce your goal? <br>
+                        If the extracted information is not relevant, you can select information from the list
+                        below.</p>
+
+                    {% if triples is defined %}
+                    <div
+                        style="max-height:300px; overflow-y:auto; border:1px solid #999; padding:10px; border-radius:4px;">
+                        {% for idx, row in triples.iterrows() %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input triple-checkbox"
+                                name="filtered_out_triples_with_goal_id"
+                                value="{{ row['goal_id'] }}_['{{ row['subject'] }}','{{ row['predicate'] }}','{{ row['object'] }}']">
+                            <label>{{ row['subject'] }} {{ row['predicate'] }} {{ row['object'] }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="verificationModalYesBtn">Yes</button>
-                    <button type="button" class="btn btn-secondary" id="verificationModalNoBtn"
+                    <button type="button" id="verificationModalYesBtn" class="btn btn-primary">Yes</button>
+                    <button type="button" id="verificationModalNoBtn" class="btn btn-secondary"
                         data-dismiss="modal">No</button>
                 </div>
+
             </div>
         </div>
     </div>
 
-    {% if highlevelgoal is defined %}
+
     <p><b>Parent goal</b>: {{ highlevelgoal }}</p> <!-- Print the high-level goal -->
     {% endif %}
 
@@ -205,8 +228,7 @@
         </div>
         {% endif %}
 
-        {% if not goal_with_outputs %} <!-- -->
-        {% if unique_triples_entailed is defined %}
+        {% if outputs|length > 0 %} <!-- -->
         <br>
         <!-- Entailed triples -->
         <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
@@ -246,56 +268,10 @@
     {% else %}
     {% if message is defined %}
     <br>
-    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-        No relevant information has been identified!
+    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg"> No relevant information has been identified!
     </div>
     {% endif %}
     {% endif %}
-    {% else %}
-    <br>
-    <!-- Entailed triples -->
-    {% if outputs|length > 0 %}
-    <table id="data_triples" class="table table-bordered table-striped" style="width:100%">
-        <thead>
-            <tr>
-                <th>Type <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip"
-                        data-placement="bottom"
-                        title="Whether the information describes a fact which should be <strong>ACHIEVE</strong>d or <strong>AVOID</strong>ed."></i>
-                </th>
-
-                <th>Information extracted <i class="bi bi-question-circle-fill text-primary" data-toggle="tooltip"
-                        data-placement="bottom"
-                        title="<b>Relevant information extracted in raw format.</b> <br><br>Should not be considered as goals by themselves but can be taken as inspiration to produce one. <br><br>If you use one or several pieces of information to refine your goal, please tick them."></i>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for idx, row in outputs.iterrows() %} <!-- outputs -->
-            <tr>
-                <td data-name="goal_type" class="goal_type">{{ row['goal_type'] }}</td>
-
-                <td>
-                    {% for t in row['entailed_triple'] %}
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="filtered_out_triples_with_goal_id"
-                            id="{{ row['goal_id'] }}" value="{{ row['goal_id'] }}_{{ t }}">
-                        <label class="form-check-label prevent-select" for="{{ row['goal_id'] }}">{{ t[0] }} {{ t[1] }}
-                            {{ t[2] }}</label>
-                    </div>
-                    {% endfor %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="alert alert-danger" role="alert" id="noTripleFoundMsg">
-        --> No relevant information has been identified!
-    </div>
-    {% endif %}
-    </form>
-    {% endif %}
-    <br>
 </div>
 
 {% endblock %}
@@ -362,7 +338,31 @@
             }
         });
 
+        // $("#verificationModalYesBtn").click(function () {
+        //     $("#verificationModal").modal("hide")
+        //     $("#okBtn").prop("disabled", true);
+        //     $("#okBtn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
+
+        //     $("#loadingModal").modal({
+        //         "backdrop": "static",
+        //         "keyboard": false
+        //     }).modal("show");
+
+        //     $("#myForm").submit();
+        // })
+
         $("#verificationModalYesBtn").click(function () {
+
+            // Copy selected triples from modal to main form
+            $(".triple-checkbox:checked").each(function () {
+                const val = $(this).val();
+                $("<input>").attr({
+                    type: "hidden",
+                    name: "filtered_out_triples_with_goal_id",
+                    value: val
+                }).appendTo("#myForm");
+            });
+
             $("#verificationModal").modal("hide")
             $("#okBtn").prop("disabled", true);
             $("#okBtn").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
@@ -373,7 +373,7 @@
             }).modal("show");
 
             $("#myForm").submit();
-        })
+        });
 
         $("#verificationModalNoBtn").click(function () {
             $("#verificationModal").modal("hide")
