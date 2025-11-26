@@ -259,6 +259,7 @@ def find_relevant_information(request: Request,
                 data.append(row)
 
         goal_triples_df = pd.DataFrame(data)
+        goal_triples_df.to_csv("goal_with_triples.csv")
 
         # get the end time
         et3 = time.time()
@@ -282,6 +283,8 @@ def find_relevant_information(request: Request,
 
         print("\nANCHOR TRIPLES:")
         print(anchor_points_df.to_string())
+        anchor_points_df.to_csv("anchor_triples.csv")
+        anchor_points_full_df.to_csv("anchor_triples_full.csv")
 
         # get the end time
         et4 = time.time()

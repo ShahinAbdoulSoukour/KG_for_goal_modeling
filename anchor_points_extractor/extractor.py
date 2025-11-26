@@ -36,28 +36,35 @@ def anchor_points_extractor(
     # remove filtered (or selected) triples from the goal_triples_df DataFrame entirely
     goal_triples_df = goal_triples_df[~goal_triples_df["TRIPLE"].isin(filtered_out_triples)].copy()
 
+    # extract the goal only once
     goal = goal_triples_df["GOAL"].iloc[0]
 
-    goal_triples_df["SCORE"] = pd.Series(cosine_similarity(
-                model.encode([goal]),  # goal embedding
-                model.encode(goal_triples_df["TRIPLE"].to_list()),  # triples (as str) embedding
-            ).flatten(),
-        )
+    # compute cosine similarity
+    goal_embedding = model.encode([goal])
+    triple_embeddings = model.encode(goal_triples_df["TRIPLE"].tolist())
 
-    highest_score = goal_triples_df["SCORE"].max()
+    goal_triples_df["SCORE"] = cosine_similarity(
+        goal_embedding,
+        triple_embeddings
+    ).flatten()
 
-    # set an interval [highest_score * 0.85, highest_score]
-    score_interval = [highest_score * 0.85, highest_score]
+    # sort by descending score 
+    goal_triples_df = goal_triples_df.sort_values(by="SCORE", ascending=False)
 
-    # filter the dataframe based on the score interval
+    # extract the highest score
+    highest_score = goal_triples_df["SCORE"].iloc[0]
+
+    # filter based on interval [85% – 100% of max]
+    score_threshold = highest_score * 0.85
     filtered_df = goal_triples_df[
-        (goal_triples_df["SCORE"] >= score_interval[0])
-        & (goal_triples_df["SCORE"] <= score_interval[1])
+        goal_triples_df["SCORE"] >= score_threshold
     ]
 
+    # if too few results (< 4), relax threshold to 65% + keep 4 best scores
     if len(filtered_df.index) < 4:
         filtered_df = goal_triples_df[
             goal_triples_df["SCORE"] >= highest_score * 0.65
         ].nlargest(4, "SCORE")
 
-    return filtered_df, goal_triples_df
+    # return both (sorted) --> highest-scoring anchor points
+    return filtered_df, goal_triples_df.reset_index(drop=True)
