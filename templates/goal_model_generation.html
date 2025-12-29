@@ -6,11 +6,12 @@
 <br>
 {% if hierarchy_data %}
 <!-- Display the goal model -->
-<div id="goal_model_div"></div>
+<div id="goal_model_div" style="max-height: 600px; overflow: auto; border: 1px solid #ddd; padding: 10px;"></div>
 
 <br>
 <!-- Export buttons -->
 <div class="row justify-content-center">
+    <!-- <button class="btn btn-info center col col-md-2 mr-2" onclick="downloadOrgChart()">Download goal model as PNG</button> -->
     <button class="btn btn-success center col col-md-2" onclick="downloadJSON()">Download goal model as JSON</button>
 </div>
 <br>
@@ -156,6 +157,19 @@
     var chart = new google.visualization.OrgChart(document.getElementById('goal_model_div'));
     chart.draw(data, { 'allowHtml': true });
     }
+
+    /*
+    function downloadOrgChart() {
+        const chartDiv = $('#goal_model_div')[0];
+
+        html2canvas(chartDiv).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'goalmodel.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+    */
 
     function buildHierarchicalJSON(hierarchyData) {
         if (!hierarchyData || hierarchyData.length === 0) {

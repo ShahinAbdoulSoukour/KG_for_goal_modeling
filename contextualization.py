@@ -242,10 +242,21 @@ def find_relevant_information(request: Request,
         triples = [list(map(str, [row["subject"], row["predicate"], row["object"]])) for row in query_results]
 
         data = []
+        triple_rows = []
+
         for t in triples:
             subject = t[0]
             predicate = t[1]
             object = t[2]
+
+            triple_rows.append({
+                "goal_id": hlg_id,
+                "subject": subject,
+                "predicate": predicate,
+                "object": object,
+                "triple": f"{subject} {predicate} {object}",
+                "triple_serialized": [subject, predicate, object],
+            })
 
             # simple triple
             triple = " ".join(t)
@@ -257,6 +268,8 @@ def find_relevant_information(request: Request,
                 row = {'TRIPLE': element[0], 'GOAL': element[1], 'TRIPLE_SERIALIZED': element[2], 'SUBJECT': element[3],
                        'PREDICATE': element[4], 'OBJECT': element[5]}
                 data.append(row)
+
+        triples_df = pd.DataFrame(triple_rows)
 
         goal_triples_df = pd.DataFrame(data)
         goal_triples_df.to_csv("goal_with_triples.csv")
@@ -447,7 +460,8 @@ def find_relevant_information(request: Request,
                 'hlg_id': new_goal.id,
                 'all_goal': all_goal,  # for the input (for autocompletion)
                 'beam_width': beam_width,
-                'max_depth': max_depth
+                'max_depth': max_depth,
+                "triples": triples_df,
             })
         else:
             message = "No triple"
