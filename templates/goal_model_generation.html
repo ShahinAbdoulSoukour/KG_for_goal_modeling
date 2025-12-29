@@ -243,8 +243,19 @@
             }
         }
 
-        if (!rootGoalId && hierarchyData.length > 0) {
-            rootGoalId = hierarchyData[0].high_level_goal_id;
+        // Fallback: if no root found, use first high-level goal or any goal
+        if (!rootGoalId) {
+            if (hierarchyData.length > 0 && hierarchyData[0].high_level_goal_id) {
+                rootGoalId = hierarchyData[0].high_level_goal_id.toString();
+            } else if (Object.keys(goalsMap).length > 0) {
+                rootGoalId = Object.keys(goalsMap)[0];
+            }
+        }
+
+        // If still no root goal found, return null
+        if (!rootGoalId || !goalsMap[rootGoalId]) {
+            console.error('No valid root goal found');
+            return null;
         }
 
         // Recursive function to build the tree
