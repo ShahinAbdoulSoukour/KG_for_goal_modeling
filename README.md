@@ -63,7 +63,7 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 The tool is then accessible by opening a webpage at the URL [127.0.0.1:8000](http://127.0.0.1:8000) or [localhost:8000](http://localhost:8000)
 
-## Increasing the speed of the inferences using HuggingFace Inference Endpoints
+## Using HuggingFace Inference Endpoints
 
 If you use HuggingFace Inference Endpoints, you can perform the NLI and sentiment analysis tasks on remote servers by creating a `.env` file at the root of this project and adding the following environment variables:
 
@@ -80,3 +80,23 @@ After setting up a pod with all required dependencies and GraphDB installed, you
 ssh -L 8000:127.0.0.1:8000 <your SSH command accessible from the Runpod platform>
 ```
 Now you can open your web browser and access our tool via this link: [127.0.0.1:8000](http://127.0.0.1:8000) or [localhost:8000](http://localhost:8000).
+
+## Citation
+
+```bibtex
+@phdthesis{abdoulsoukour:tel-05448495,
+  TITLE = {{Leveraging domain knowledge in software system goal models}},
+  AUTHOR = {Abdoul Soukour, Shahin},
+  URL = {https://theses.hal.science/tel-05448495},
+  NUMBER = {2025SORUS359},
+  SCHOOL = {{Sorbonne Universit{\'e}}},
+  YEAR = {2025},
+  MONTH = Sep,
+  KEYWORDS = {Natural Language Processing ; Knowledge Graph ; Requirement engineering ; Software engineering ; Traitement automatique du langage naturel ; Graphe de connaissance ; Ing{\'e}nierie des exigences ; G{\'e}nie logiciel},
+  TYPE = {Theses},
+  PDF = {https://theses.hal.science/tel-05448495v1/file/142066_ABDOUL_SOUKOUR_2025_archivage.pdf},
+  HAL_ID = {tel-05448495},
+  HAL_VERSION = {v1},
+}
+```
+
